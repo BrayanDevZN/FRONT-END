@@ -30,22 +30,35 @@ export default function Login() {
     event.preventDefault();
 
     setError("");
+
+    if (!email.trim()) {
+      setError("Digite seu e-mail.");
+      return;
+    }
+
+    if (!password.trim()) {
+      setError("Digite sua senha.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const userResponse = await validUser(email.trim());
+      const normalizedEmail = email.trim().toLowerCase();
+
+      const userResponse = await validUser(normalizedEmail);
 
       if (userResponse?.exists !== true) {
         throw new Error("Essa conta não existe.");
       }
 
-      const response = await login(email.trim(), password);
+      const response = await login(normalizedEmail, password);
 
       const token =
         response?.token || response?.access_token || response?.data?.token;
 
       if (!token) {
-        throw new Error("Email ou senha inválidos.");
+        throw new Error("E-mail ou senha inválidos.");
       }
 
       saveToken(token);
@@ -60,10 +73,12 @@ export default function Login() {
   return (
     <main className="login-screen">
       <section className="login-left">
-        <div className="brand">
-          <div className="brand-icon">
-            <img src="/datapilot-logo-light.svg" alt="DataPilot Logo" />
-          </div>
+        <div className="brand login-brand">
+          <img
+            src="/favicon.svg"
+            alt="Logo DataPilot AI"
+            className="login-brand-logo"
+          />
 
           <h1>
             DataPilot <span>AI</span>
@@ -77,13 +92,15 @@ export default function Login() {
           </h2>
 
           <p>
-            Envie planilhas, acompanhe dashboards e receba insights práticos para tomar decisões melhores.
+            Envie planilhas, acompanhe dashboards e receba insights práticos
+            para tomar decisões melhores.
           </p>
         </div>
 
         <div className="feature-list">
           <div className="feature-item">
             <div>📊</div>
+
             <span>
               <strong>Visualização financeira completa</strong>
               Gere análises, gráficos e relatórios de forma simples.
@@ -92,6 +109,7 @@ export default function Login() {
 
           <div className="feature-item">
             <div>🧠</div>
+
             <span>
               <strong>Copiloto financeiro com IA</strong>
               Receba respostas inteligentes a partir dos seus dados.
@@ -100,6 +118,7 @@ export default function Login() {
 
           <div className="feature-item">
             <div>🔒</div>
+
             <span>
               <strong>Segurança e privacidade</strong>
               Acesso protegido sem alterar sua estrutura de autenticação.
@@ -117,8 +136,9 @@ export default function Login() {
             label="E-mail"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(event) => setEmail(event.target.value)}
             placeholder="seu@email.com"
+            autoComplete="email"
           />
 
           <div className="input-group">
@@ -128,8 +148,9 @@ export default function Login() {
               <input
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
                 placeholder="Digite sua senha"
+                autoComplete="current-password"
               />
 
               <button

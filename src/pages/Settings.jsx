@@ -3,10 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   AlertCircle,
   CheckCircle2,
-  ChevronRight,
   Eye,
   EyeOff,
-  KeyRound,
   LockKeyhole,
   Mail,
   ShieldAlert,
@@ -111,7 +109,6 @@ export default function Settings() {
 
     try {
       const token = getToken();
-
       const response = await updateName(token, cleanName);
 
       if (response?.status === false) {
@@ -156,7 +153,6 @@ export default function Settings() {
 
     try {
       const token = getToken();
-
       const response = await updatePassword(token, currentPassword, newPassword);
 
       if (response?.status === "equal") {
@@ -261,16 +257,6 @@ export default function Settings() {
             <span className="settings-dp-kicker">DataPilot AI</span>
             <h1>Configurações</h1>
             <p>Gerencie os dados do perfil, senha de acesso e segurança da sua conta.</p>
-          </div>
-
-          <div className="settings-dp-profile-pill">
-            <span className="settings-dp-avatar">
-              <UserRound size={22} />
-            </span>
-            <div>
-              <strong>{loadingProfile ? "Carregando..." : currentName}</strong>
-              <span>Conta ativa</span>
-            </div>
           </div>
         </section>
 
@@ -436,7 +422,7 @@ export default function Settings() {
               </div>
 
               <h3>{loadingProfile ? "Carregando..." : currentName}</h3>
-              <p>Perfil administrativo do DataPilot AI.</p>
+              <p>Perfil do DataPilot AI.</p>
 
               <div className="settings-dp-status-list">
                 <span>
@@ -447,29 +433,6 @@ export default function Settings() {
                   <ShieldCheck size={15} />
                   Segurança padrão
                 </span>
-              </div>
-            </section>
-
-            <section className="settings-dp-card settings-dp-mini-card">
-              <h3>Segurança da conta</h3>
-              <p>Atalhos rápidos para manter seu acesso protegido.</p>
-
-              <div className="settings-dp-mini-list">
-                <Link to="/settings/recover-password">
-                  <span>
-                    <KeyRound size={18} />
-                    Recuperar senha
-                  </span>
-                  <ChevronRight size={16} />
-                </Link>
-
-                <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
-                  <span>
-                    <LockKeyhole size={18} />
-                    Alterar senha
-                  </span>
-                  <ChevronRight size={16} />
-                </button>
               </div>
             </section>
           </aside>

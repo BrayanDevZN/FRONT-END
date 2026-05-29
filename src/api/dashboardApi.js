@@ -5,16 +5,46 @@ async function parseResponse(response, fallbackMessage) {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const message =
-      data?.detail ||
-      data?.message ||
-      data?.error ||
-      fallbackMessage;
+    let message = fallbackMessage;
+
+    if (typeof data?.detail === "string") {
+      message = data.detail;
+    } else if (Array.isArray(data?.detail)) {
+      message = data.detail
+        .map((err) => err.msg || JSON.stringify(err))
+        .join(", ");
+    } else if (data?.detail) {
+      message = JSON.stringify(data.detail);
+    } else if (data?.message) {
+      message = data.message;
+    } else if (data?.error) {
+      message = data.error;
+    }
 
     throw new Error(message);
   }
 
   return data;
+}
+
+function normalizeChartsPayload(data) {
+  if (!data) return data;
+
+  const charts =
+    data.charts ||
+    data.dashboard?.charts ||
+    (data.chart ? [data.chart] : []);
+
+  return {
+    ...data,
+    charts,
+    dashboard: data.dashboard
+      ? {
+          ...data.dashboard,
+          charts,
+        }
+      : data.dashboard,
+  };
 }
 
 export async function generateDashboard({ token, title, prompt, file }) {
@@ -30,7 +60,9 @@ export async function generateDashboard({ token, title, prompt, file }) {
     body: formData,
   });
 
-  return parseResponse(response, "Erro ao gerar dashboard.");
+  const data = await parseResponse(response, "Erro ao gerar dashboard.");
+
+  return normalizeChartsPayload(data);
 }
 
 export async function getDashboards(token) {
@@ -57,7 +89,9 @@ export async function getDashboard(token, dashboard_id) {
     }),
   });
 
-  return parseResponse(response, "Erro ao abrir dashboard.");
+  const data = await parseResponse(response, "Erro ao abrir dashboard.");
+
+  return normalizeChartsPayload(data);
 }
 
 export async function deleteDashboard(token, dashboard_id) {
@@ -78,6 +112,7 @@ export async function deleteDashboard(token, dashboard_id) {
 export async function saveChartSettings({
   token,
   dashboard_id,
+  chart_id,
   chart_color,
   chart_background,
   x_axis_text_color,
@@ -86,22 +121,28 @@ export async function saveChartSettings({
   grid_style,
   bar_style,
 }) {
+  const body = {
+    token,
+    dashboard_id: Number(dashboard_id),
+    chart_color,
+    chart_background,
+    x_axis_text_color,
+    y_axis_text_color,
+    grid_color,
+    grid_style,
+    bar_style,
+  };
+
+  if (chart_id) {
+    body.chart_id = Number(chart_id);
+  }
+
   const response = await fetch(`${ACCOUNTS_URL}/dashboard/chart/settings`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      token,
-      dashboard_id: Number(dashboard_id),
-      chart_color,
-      chart_background,
-      x_axis_text_color,
-      y_axis_text_color,
-      grid_color,
-      grid_style,
-      bar_style,
-    }),
+    body: JSON.stringify(body),
   });
 
   return parseResponse(response, "Erro ao salvar configurações do gráfico.");

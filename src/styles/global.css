@@ -3407,3 +3407,393 @@ a:hover {
     width: 100%;
   }
 }
+.topbar-search-wrapper {
+  position: relative;
+}
+
+.topbar-search-suggestions {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #ffffff;
+  border: 1px solid #dbe7f5;
+  border-radius: 18px;
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.14);
+  padding: 10px;
+}
+
+.search-group + .search-group {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #edf2f7;
+}
+
+.search-group-title {
+  display: block;
+  margin: 4px 8px 8px;
+  font-size: 11px;
+  font-weight: 900;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.topbar-search-suggestions button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  padding: 11px 10px;
+  border-radius: 13px;
+  cursor: pointer;
+  text-align: left;
+  color: #071f46;
+}
+
+.topbar-search-suggestions button:hover {
+  background: #f1f6ff;
+}
+
+.topbar-search-suggestions button svg {
+  color: #1267f1;
+  flex-shrink: 0;
+}
+
+.topbar-search-suggestions strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 900;
+  color: #071f46;
+}
+
+.topbar-search-suggestions button span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.search-empty {
+  margin: 0;
+  padding: 14px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+}
+.topbar-cta-group {
+  display: flex;
+  gap: 12px;
+}
+
+.topbar-cta-secondary {
+  background: #ffffff;
+  color: #1267f1;
+  border: 1px solid #dbe7f5;
+}
+
+.topbar-cta-secondary:hover {
+  background: #f5f9ff;
+}
+/* =========================
+   Dashboard UX Upgrade
+========================= */
+
+.dashboard-view-header {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  background: white;
+
+  padding: 18px 0;
+
+  border-bottom: 1px solid #e4eaf3;
+}
+
+.dashboard-chart-top {
+  position: sticky;
+  top: 95px;
+  z-index: 119;
+
+  background: white;
+
+  padding-top: 10px;
+  padding-bottom: 12px;
+}
+
+.chart-style-panel {
+  position: sticky;
+  top: 180px;
+  z-index: 118;
+
+  background: white;
+
+  margin-bottom: 20px;
+}
+
+.dashboard-chart-real {
+  width: 100%;
+  overflow: hidden;
+}
+
+.chart-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  width: 100%;
+}
+
+.dashboard-analysis-card {
+  width: 100%;
+  max-width: 100%;
+
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+#dashboard-export-area {
+  overflow: visible;
+}
+
+.dashboard-view-header.dashboard-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 120;
+  background: #ffffff;
+  padding: 18px 0;
+  border-bottom: 1px solid #e4eaf3;
+}
+
+.dashboard-chart-top.dashboard-toolbar {
+  position: sticky;
+  top: 74px;
+  z-index: 119;
+  background: #ffffff;
+  padding-top: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.chart-style-panel.dashboard-toolbar {
+  position: sticky;
+  top: 150px;
+  z-index: 118;
+  background: #ffffff;
+  margin-bottom: 20px;
+  border: 1px solid #e4eaf3;
+  box-shadow: 0 8px 20px rgba(10, 30, 61, 0.05);
+}
+
+.dashboard-chart-card-large {
+  overflow: visible;
+}
+
+.dashboard-chart-real {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.chart-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 14px;
+}
+
+.dashboard-analysis-card {
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  margin-top: 24px;
+}
+
+.dashboard-analysis-card * {
+  max-width: 100%;
+}
+
+#dashboard-export-area {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+/* ===== FIX DASHBOARD BUGADO ===== */
+
+.dashboard-scroll-area {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.dashboard-view {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dashboard-view-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: #ffffff;
+  padding: 18px 0;
+  border-bottom: 1px solid #e4eaf3;
+}
+
+.dashboard-chart-top,
+.chart-style-panel {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+}
+
+.dashboard-chart-card-large {
+  overflow: hidden;
+}
+
+.dashboard-chart-real {
+  width: 100%;
+  overflow: hidden;
+}
+
+.chart-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 16px 0 10px;
+}
+
+#dashboard-export-area {
+  width: 100%;
+  overflow: hidden;
+}
+
+.dashboard-analysis-card {
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.dashboard-view-header {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+
+  background: transparent;
+  padding: 0 0 12px;
+  border-bottom: 0;
+}
+.dashboards-page {
+  padding: 18px 18px 28px;
+}
+
+.dashboard-scroll-area {
+  padding: 18px;
+}
+
+.dashboard-content {
+  border-radius: 22px;
+}
+
+.dashboard-chart-card-large {
+  width: 100%;
+}
+
+.chart-scroll > div {
+  min-width: 1500px;
+}
+/* ===== DataPilot multi-chart dashboard patch ===== */
+.dashboard-chart-list {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+}
+
+.dashboard-chart-card-large {
+  width: 100%;
+  overflow: hidden;
+}
+
+.dashboard-chart-real {
+  width: 100%;
+  overflow: hidden;
+}
+
+.chart-scroll {
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 16px 0 10px;
+}
+
+.dashboard-table-chart {
+  min-width: 900px;
+  border: 1px solid #e4eaf3;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.dashboard-table-chart table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dashboard-table-chart th,
+.dashboard-table-chart td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef2f7;
+  text-align: left;
+  font-size: 13px;
+}
+
+.dashboard-table-chart th {
+  background: #f8fbff;
+  color: #0a1e3d;
+  font-weight: 900;
+}
+
+.dashboard-title-hidden {
+  display: none;
+}
+
+.dashboard-view-header {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+  background: transparent;
+  padding: 0 0 12px;
+  border-bottom: 0;
+}
+
+.dashboard-actions {
+  position: sticky;
+  top: 0;
+  z-index: 70;
+  background: #ffffff;
+  padding: 12px 0;
+}
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.login-brand-logo {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 16px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+}
+
+.login-brand h1 {
+  margin: 0;
+}

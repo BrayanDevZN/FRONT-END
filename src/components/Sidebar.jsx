@@ -1,16 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  ArrowRightLeft,
   BarChart3,
-  FileText,
   ChevronLeft,
   Home,
   LayoutDashboard,
   LogOut,
   MessageSquareText,
   Plus,
-  Rocket,
   Settings,
   Sparkles,
   Trash2,
@@ -61,8 +58,6 @@ export default function Sidebar() {
 
   const activeArea = useMemo(() => {
     if (location.pathname.startsWith("/chat")) return "ia";
-    if (location.pathname.startsWith("/movimentacoes")) return "movimentacoes";
-    if (location.pathname.startsWith("/relatorios")) return "relatorios";
     if (location.pathname.startsWith("/settings")) return "settings";
     return "inicio";
   }, [location.pathname]);
@@ -169,7 +164,10 @@ export default function Sidebar() {
       }
 
       const response = await createConversation(token, title);
-      const conversationId = response?.conversation_id || response?.id || response?.data?.conversation_id;
+      const conversationId =
+        response?.conversation_id ||
+        response?.id ||
+        response?.data?.conversation_id;
 
       if (!conversationId) {
         throw new Error("A API não retornou o ID da conversa.");
@@ -267,7 +265,10 @@ export default function Sidebar() {
       await deleteConversation(token, conversationToDelete);
 
       setConversations((prev) =>
-        prev.filter((conversation) => Number(getConversationId(conversation)) !== Number(conversationToDelete))
+        prev.filter(
+          (conversation) =>
+            Number(getConversationId(conversation)) !== Number(conversationToDelete)
+        )
       );
 
       if (window.location.pathname === `/chat/${conversationToDelete}`) {
@@ -329,6 +330,49 @@ export default function Sidebar() {
     loadConversations();
     loadDashboards();
   }, []);
+  useEffect(() => {
+  loadConversations();
+  loadDashboards();
+}, []);
+
+useEffect(() => {
+  function handleOpenChatModal() {
+    setChatTitle("");
+    setModalError("");
+    setShowNewChatModal(true);
+  }
+
+  function handleOpenDashboardModal() {
+    setDashboardTitle("");
+    setDashboardPrompt("");
+    setDashboardFile(null);
+    setModalError("");
+    setShowNewDashboardModal(true);
+  }
+
+  window.addEventListener(
+    "open-chat-modal",
+    handleOpenChatModal
+  );
+
+  window.addEventListener(
+    "open-dashboard-modal",
+    handleOpenDashboardModal
+  );
+
+  return () => {
+    window.removeEventListener(
+      "open-chat-modal",
+      handleOpenChatModal
+    );
+
+    window.removeEventListener(
+      "open-dashboard-modal",
+      handleOpenDashboardModal
+    );
+  };
+}, []);
+
 
   return (
     <>
@@ -359,46 +403,7 @@ export default function Sidebar() {
               <Home size={20} />
               {!collapsed && <span>Início</span>}
             </button>
-
-            <button
-              type="button"
-              className={`sidebar-nav-item ${activeArea === "ia" ? "is-active" : ""}`}
-              onClick={() => {
-                const firstConversation = conversations[0];
-                if (firstConversation) {
-                  goToChat(getConversationId(firstConversation), firstConversation.title || "IA Financeira");
-                } else {
-                  openNewChatModal();
-                }
-              }}
-              title="IA Financeira"
-            >
-              <Sparkles size={20} />
-              {!collapsed && <span>IA Financeira</span>}
-            </button>
-
-            <button
-              type="button"
-              className={`sidebar-nav-item ${activeArea === "movimentacoes" ? "is-active" : ""}`}
-              onClick={() => navigate("/movimentacoes")}
-              title="Movimentações"
-            >
-              <ArrowRightLeft size={20} />
-              {!collapsed && <span>Movimentações</span>}
-            </button>
-
-            <button
-              type="button"
-              className={`sidebar-nav-item ${activeArea === "relatorios" ? "is-active" : ""}`}
-              onClick={() => navigate("/relatorios")}
-              title="Relatórios"
-            >
-              <FileText size={20} />
-              {!collapsed && <span>Relatórios</span>}
-            </button>
-
           </nav>
-
 
           <div className="sidebar-section">
             <div className="sidebar-section-title">
@@ -431,7 +436,9 @@ export default function Sidebar() {
                         className="sidebar-menu-button"
                         onClick={(event) => {
                           event.stopPropagation();
-                          setOpenDashboardMenuId(openDashboardMenuId === dashboard.id ? null : dashboard.id);
+                          setOpenDashboardMenuId(
+                            openDashboardMenuId === dashboard.id ? null : dashboard.id
+                          );
                         }}
                       >
                         ⋯
@@ -440,7 +447,10 @@ export default function Sidebar() {
 
                     {openDashboardMenuId === dashboard.id && (
                       <div className="sidebar-popover-menu">
-                        <button type="button" onClick={(event) => handleDeleteDashboard(event, dashboard.id)}>
+                        <button
+                          type="button"
+                          onClick={(event) => handleDeleteDashboard(event, dashboard.id)}
+                        >
                           <Trash2 size={14} />
                           Excluir
                         </button>
@@ -511,22 +521,11 @@ export default function Sidebar() {
         </div>
 
         <div className="sidebar-footer">
-          {!collapsed && (
-            <div className="sidebar-create-card sidebar-create-card-footer">
-              <div className="create-card-icon">
-                <Rocket size={18} />
-              </div>
-              <p>Transforme planilhas em gráficos e respostas com IA.</p>
-              <button type="button" onClick={openNewDashboardModal} disabled={loading}>
-                <UploadCloud size={16} />
-                Enviar arquivo
-              </button>
-            </div>
-          )}
-
           <button
             type="button"
-            className={`sidebar-nav-item sidebar-footer-nav-item ${activeArea === "settings" ? "is-active" : ""}`}
+            className={`sidebar-nav-item sidebar-footer-nav-item ${
+              activeArea === "settings" ? "is-active" : ""
+            }`}
             onClick={() => navigate("/settings")}
             title="Configurações"
           >
@@ -534,7 +533,12 @@ export default function Sidebar() {
             {!collapsed && <span>Configurações</span>}
           </button>
 
-          <button type="button" className="sidebar-nav-item sidebar-footer-nav-item" onClick={handleLogout} title="Sair">
+          <button
+            type="button"
+            className="sidebar-nav-item sidebar-footer-nav-item"
+            onClick={handleLogout}
+            title="Sair"
+          >
             <LogOut size={20} />
             {!collapsed && <span>Sair</span>}
           </button>
@@ -553,7 +557,10 @@ export default function Sidebar() {
       {showNewChatModal && (
         <div className="modal-overlay">
           <form className="modal-card" onSubmit={handleCreateChat}>
-            <div className="modal-icon"><Sparkles size={22} /></div>
+            <div className="modal-icon">
+              <Sparkles size={22} />
+            </div>
+
             <h2>Novo chat</h2>
             <p>Escolha um nome para encontrar essa conversa depois.</p>
 
@@ -567,7 +574,12 @@ export default function Sidebar() {
             {modalError && <p className="modal-error">{modalError}</p>}
 
             <div className="modal-actions">
-              <button type="button" className="modal-cancel" onClick={closeNewChatModal} disabled={loading}>
+              <button
+                type="button"
+                className="modal-cancel"
+                onClick={closeNewChatModal}
+                disabled={loading}
+              >
                 Cancelar
               </button>
 
@@ -582,7 +594,10 @@ export default function Sidebar() {
       {showNewDashboardModal && (
         <div className="modal-overlay">
           <form className="modal-card modal-card-wide" onSubmit={handleCreateDashboard}>
-            <div className="modal-icon"><LayoutDashboard size={22} /></div>
+            <div className="modal-icon">
+              <LayoutDashboard size={22} />
+            </div>
+
             <h2>Novo dashboard</h2>
             <p>Envie uma planilha e descreva qual análise a IA deve gerar.</p>
 
@@ -621,7 +636,12 @@ export default function Sidebar() {
             {modalError && <p className="modal-error">{modalError}</p>}
 
             <div className="modal-actions">
-              <button type="button" className="modal-cancel" onClick={closeNewDashboardModal} disabled={loading}>
+              <button
+                type="button"
+                className="modal-cancel"
+                onClick={closeNewDashboardModal}
+                disabled={loading}
+              >
                 Cancelar
               </button>
 
@@ -636,7 +656,10 @@ export default function Sidebar() {
       {showDeleteChatModal && (
         <div className="modal-overlay">
           <div className="modal-card">
-            <div className="modal-icon modal-icon-danger"><Trash2 size={22} /></div>
+            <div className="modal-icon modal-icon-danger">
+              <Trash2 size={22} />
+            </div>
+
             <h2>Excluir conversa</h2>
             <p>Tem certeza que deseja excluir esta conversa?</p>
 
@@ -656,7 +679,10 @@ export default function Sidebar() {
       {showDeleteDashboardModal && (
         <div className="modal-overlay">
           <div className="modal-card">
-            <div className="modal-icon modal-icon-danger"><Trash2 size={22} /></div>
+            <div className="modal-icon modal-icon-danger">
+              <Trash2 size={22} />
+            </div>
+
             <h2>Excluir dashboard</h2>
             <p>Tem certeza que deseja excluir este dashboard?</p>
 
@@ -665,7 +691,11 @@ export default function Sidebar() {
                 Cancelar
               </button>
 
-              <button type="button" className="delete-confirm-button" onClick={confirmDeleteDashboard}>
+              <button
+                type="button"
+                className="delete-confirm-button"
+                onClick={confirmDeleteDashboard}
+              >
                 Excluir
               </button>
             </div>
