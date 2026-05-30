@@ -3893,3 +3893,34 @@ a:hover {
   visibility: visible;
   display: flex;
 }
+.sidebar-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: visible !important;
+}
+
+.sidebar-row-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.sidebar-menu-button {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+
+    width: 28px;
+    height: 28px;
+
+    flex-shrink: 0;
+
+    opacity: 1 !important;
+    visibility: visible !important;
+
+    color: white;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
