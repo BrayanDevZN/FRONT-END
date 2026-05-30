@@ -3924,3 +3924,69 @@ a:hover {
     border: none;
     cursor: pointer;
 }
+/* Correção definitiva dos três pontinhos da sidebar */
+.sidebar {
+  overflow-x: hidden !important;
+}
+
+.sidebar-section {
+  width: 100%;
+  min-width: 0;
+}
+
+.sidebar-list {
+  width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.sidebar-row {
+  width: 100%;
+  min-width: 0;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 4px;
+  overflow: visible !important;
+}
+
+.sidebar-row-main {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sidebar-row-main span {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sidebar-menu-button {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
+  display: grid !important;
+  place-items: center;
+  flex-shrink: 0;
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: rgba(255, 255, 255, 0.75);
+  background: transparent;
+  border-radius: 9px;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.sidebar-menu-button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.sidebar-popover-menu {
+  right: 0 !important;
+}
