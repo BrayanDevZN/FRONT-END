@@ -3797,3 +3797,45 @@ a:hover {
 .login-brand h1 {
   margin: 0;
 }
+.sidebar {
+  overflow-x: hidden;
+}
+
+.sidebar-list,
+.sidebar-section,
+.sidebar-dashboard-list,
+.sidebar-chat-list {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+.sidebar-item,
+.sidebar-dashboard-item,
+.sidebar-chat-item {
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+}
+
+.sidebar-item span,
+.sidebar-dashboard-item span,
+.sidebar-chat-item span,
+.sidebar-link-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.sidebar-item button,
+.sidebar-dashboard-item button,
+.sidebar-chat-item button,
+.sidebar-menu-button,
+.sidebar-more-button {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
