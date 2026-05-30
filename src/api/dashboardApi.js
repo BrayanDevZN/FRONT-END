@@ -52,7 +52,7 @@ export async function generateDashboard({ token, title, prompt, file }) {
 
   formData.append("token", token);
   formData.append("title", title);
-  formData.append("prompt", prompt);
+  formData.append("prompt", prompt || "");
   formData.append("file", file);
 
   const response = await fetch(`${AI_URL}/dashboard/analyze`, {
@@ -120,6 +120,8 @@ export async function saveChartSettings({
   grid_color,
   grid_style,
   bar_style,
+  pie_colors,
+  show_legend,
 }) {
   const body = {
     token,
@@ -131,6 +133,8 @@ export async function saveChartSettings({
     grid_color,
     grid_style,
     bar_style,
+    pie_colors: Array.isArray(pie_colors) ? pie_colors : [],
+    show_legend: show_legend ?? true,
   };
 
   if (chart_id) {

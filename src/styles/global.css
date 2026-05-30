@@ -3990,3 +3990,62 @@ a:hover {
 .sidebar-popover-menu {
   right: 0 !important;
 }
+/* Configurações específicas de pizza/rosca */
+.chart-pie-settings-panel {
+  align-items: flex-start;
+}
+
+.chart-toggle-label {
+  min-width: 180px;
+}
+
+.chart-slice-colors {
+  flex: 1;
+  min-width: 260px;
+  display: grid;
+  gap: 10px;
+}
+
+.chart-slice-colors > span {
+  color: #344054;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.chart-slice-color-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.chart-slice-color-item {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 1px solid #d6dfeb;
+  border-radius: 12px;
+  background: #fff;
+  color: #344054;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chart-slice-color-item span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chart-slice-color-item input {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}

@@ -17,6 +17,7 @@ import {
   LineChart,
   Pie,
   PieChart,
+  Legend,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -38,6 +39,21 @@ import {
 
 import { getToken } from "../utils/storage";
 
+const DEFAULT_PIE_COLORS = [
+  "#4f46e5",
+  "#06b6d4",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#ec4899",
+  "#84cc16",
+  "#f97316",
+  "#14b8a6",
+  "#64748b",
+  "#0ea5e9",
+];
+
 const DEFAULT_CHART_SETTINGS = {
   chartColor: "#4f46e5",
   chartBackground: "#f8fafc",
@@ -46,6 +62,8 @@ const DEFAULT_CHART_SETTINGS = {
   gridColor: "#cbd5e1",
   gridStyle: "3 3",
   barStyle: "rounded",
+  pieColors: DEFAULT_PIE_COLORS,
+  showLegend: true,
 };
 
 export default function Dashboards() {
@@ -117,6 +135,33 @@ export default function Dashboards() {
     return String(chart?.id || chart?.chart_id || `chart_${index}`);
   }
 
+  function normalizePieColors(value) {
+    if (Array.isArray(value)) {
+      return value.length ? value : DEFAULT_PIE_COLORS;
+    }
+
+    if (typeof value === "string" && value.trim()) {
+      try {
+        const parsed = JSON.parse(value);
+
+        if (Array.isArray(parsed) && parsed.length) {
+          return parsed;
+        }
+      } catch {
+        const colors = value
+          .split(",")
+          .map((color) => color.trim())
+          .filter(Boolean);
+
+        if (colors.length) {
+          return colors;
+        }
+      }
+    }
+
+    return DEFAULT_PIE_COLORS;
+  }
+
   function normalizeSettings(settings = {}) {
     return {
       chartColor: settings.chart_color || settings.chartColor || DEFAULT_CHART_SETTINGS.chartColor,
@@ -126,7 +171,34 @@ export default function Dashboards() {
       gridColor: settings.grid_color || settings.gridColor || DEFAULT_CHART_SETTINGS.gridColor,
       gridStyle: settings.grid_style || settings.gridStyle || DEFAULT_CHART_SETTINGS.gridStyle,
       barStyle: settings.bar_style || settings.barStyle || DEFAULT_CHART_SETTINGS.barStyle,
+      pieColors: normalizePieColors(settings.pie_colors || settings.pieColors),
+      showLegend: settings.show_legend ?? settings.showLegend ?? DEFAULT_CHART_SETTINGS.showLegend,
     };
+  }
+
+  function getPieColor(settings, index) {
+    const colors = normalizePieColors(settings.pieColors);
+    return colors[index % colors.length] || DEFAULT_PIE_COLORS[index % DEFAULT_PIE_COLORS.length];
+  }
+
+  function updatePieSliceColor(chartId, index, value) {
+    setChartSettings((prev) => {
+      const currentSettings = {
+        ...DEFAULT_CHART_SETTINGS,
+        ...(prev[chartId] || {}),
+      };
+
+      const nextColors = [...normalizePieColors(currentSettings.pieColors)];
+      nextColors[index] = value;
+
+      return {
+        ...prev,
+        [chartId]: {
+          ...currentSettings,
+          pieColors: nextColors,
+        },
+      };
+    });
   }
 
   function updateChartSetting(chartId, key, value) {
@@ -176,6 +248,8 @@ export default function Dashboards() {
             grid_color: settings.gridColor,
             grid_style: settings.gridStyle,
             bar_style: settings.barStyle,
+            pie_colors: normalizePieColors(settings.pieColors),
+            show_legend: settings.showLegend,
           });
         })
       );
@@ -678,16 +752,30 @@ export default function Dashboards() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Tooltip />
+                {settings.showLegend && (
+                  <Legend
+                    verticalAlign="bottom"
+                    height={70}
+                    wrapperStyle={{
+                      color: settings.xAxisTextColor,
+                      fontWeight: 700,
+                      fontSize: 13,
+                    }}
+                  />
+                )}
                 <Pie
                   data={chartData}
                   dataKey={yKey}
                   nameKey={xKey}
-                  innerRadius={chartType === "donut" ? 95 : 0}
+                  innerRadius={chartType === "donut" ? 100 : 0}
                   outerRadius={220}
                   label
                 >
                   {chartData.map((_, index) => (
-                    <Cell key={index} fill={settings.chartColor} />
+                    <Cell
+                      key={`slice-${index}`}
+                      fill={getPieColor(settings, index)}
+                    />
                   ))}
                 </Pie>
               </PieChart>
@@ -820,6 +908,13 @@ export default function Dashboards() {
   function renderChartControls(currentChart, index) {
     const chartId = getChartId(currentChart, index);
     const settings = chartSettings[chartId] || DEFAULT_CHART_SETTINGS;
+    const chartType = currentChart?.chart_type || currentChart?.type || "bar";
+    const rawChartData = getRawChartData(currentChart);
+    const { xKey } = getChartKeys(rawChartData, currentChart);
+    const chartData = rawChartData || [];
+    const isPieLike = chartType === "pie" || chartType === "donut";
+    const isBarLike = chartType === "bar" || chartType === "horizontal_bar";
+    const isCartesian = ["bar", "horizontal_bar", "line", "area", "scatter"].includes(chartType);
 
     return (
       <>
@@ -827,11 +922,13 @@ export default function Dashboards() {
           <h3>{currentChart.title || `Gráfico ${index + 1}`}</h3>
 
           <div className="chart-custom-actions">
-            <label className="chart-color-button">
-              <span>Gráfico</span>
-              <span className="chart-color-preview" style={{ backgroundColor: settings.chartColor }} />
-              <input type="color" defaultValue={settings.chartColor} onBlur={(event) => updateChartSetting(chartId, "chartColor", event.target.value)} />
-            </label>
+            {!isPieLike && (
+              <label className="chart-color-button">
+                <span>Gráfico</span>
+                <span className="chart-color-preview" style={{ backgroundColor: settings.chartColor }} />
+                <input type="color" defaultValue={settings.chartColor} onBlur={(event) => updateChartSetting(chartId, "chartColor", event.target.value)} />
+              </label>
+            )}
 
             <label className="chart-color-button">
               <span>Fundo</span>
@@ -839,48 +936,92 @@ export default function Dashboards() {
               <input type="color" defaultValue={settings.chartBackground} onBlur={(event) => updateChartSetting(chartId, "chartBackground", event.target.value)} />
             </label>
 
-            <label className="chart-color-button">
-              <span>Texto X</span>
-              <span className="chart-color-preview" style={{ backgroundColor: settings.xAxisTextColor }} />
-              <input type="color" defaultValue={settings.xAxisTextColor} onBlur={(event) => updateChartSetting(chartId, "xAxisTextColor", event.target.value)} />
-            </label>
+            {isCartesian && (
+              <>
+                <label className="chart-color-button">
+                  <span>Texto X</span>
+                  <span className="chart-color-preview" style={{ backgroundColor: settings.xAxisTextColor }} />
+                  <input type="color" defaultValue={settings.xAxisTextColor} onBlur={(event) => updateChartSetting(chartId, "xAxisTextColor", event.target.value)} />
+                </label>
 
-            <label className="chart-color-button">
-              <span>Texto Y</span>
-              <span className="chart-color-preview" style={{ backgroundColor: settings.yAxisTextColor }} />
-              <input type="color" defaultValue={settings.yAxisTextColor} onBlur={(event) => updateChartSetting(chartId, "yAxisTextColor", event.target.value)} />
-            </label>
+                <label className="chart-color-button">
+                  <span>Texto Y</span>
+                  <span className="chart-color-preview" style={{ backgroundColor: settings.yAxisTextColor }} />
+                  <input type="color" defaultValue={settings.yAxisTextColor} onBlur={(event) => updateChartSetting(chartId, "yAxisTextColor", event.target.value)} />
+                </label>
 
-            <label className="chart-color-button">
-              <span>Traços</span>
-              <span className="chart-color-preview" style={{ backgroundColor: settings.gridColor }} />
-              <input type="color" defaultValue={settings.gridColor} onBlur={(event) => updateChartSetting(chartId, "gridColor", event.target.value)} />
-            </label>
+                <label className="chart-color-button">
+                  <span>Traços</span>
+                  <span className="chart-color-preview" style={{ backgroundColor: settings.gridColor }} />
+                  <input type="color" defaultValue={settings.gridColor} onBlur={(event) => updateChartSetting(chartId, "gridColor", event.target.value)} />
+                </label>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="chart-style-panel">
-          <label>
-            Tipo dos traços
-            <select value={settings.gridStyle} onChange={(event) => updateChartSetting(chartId, "gridStyle", event.target.value)}>
-              <option value="3 3">Pontilhado</option>
-              <option value="8 4">Tracejado</option>
-              <option value="1 0">Linha sólida</option>
-              <option value="1 8">Espaçado</option>
-            </select>
-          </label>
+        {isCartesian && (
+          <div className="chart-style-panel">
+            <label>
+              Tipo dos traços
+              <select value={settings.gridStyle} onChange={(event) => updateChartSetting(chartId, "gridStyle", event.target.value)}>
+                <option value="3 3">Pontilhado</option>
+                <option value="8 4">Tracejado</option>
+                <option value="1 0">Linha sólida</option>
+                <option value="1 8">Espaçado</option>
+              </select>
+            </label>
 
-          <label>
-            Estilo das barras
-            <select value={settings.barStyle} onChange={(event) => updateChartSetting(chartId, "barStyle", event.target.value)}>
-              <option value="rounded">Arredondada</option>
-              <option value="soft">Levemente arredondada</option>
-              <option value="square">Quadrada</option>
-              <option value="thin">Fina</option>
-              <option value="thick">Grossa</option>
-            </select>
-          </label>
-        </div>
+            {isBarLike && (
+              <label>
+                Estilo das barras
+                <select value={settings.barStyle} onChange={(event) => updateChartSetting(chartId, "barStyle", event.target.value)}>
+                  <option value="rounded">Arredondada</option>
+                  <option value="soft">Levemente arredondada</option>
+                  <option value="square">Quadrada</option>
+                  <option value="thin">Fina</option>
+                  <option value="thick">Grossa</option>
+                </select>
+              </label>
+            )}
+          </div>
+        )}
+
+        {isPieLike && (
+          <div className="chart-style-panel chart-pie-settings-panel">
+            <label className="chart-toggle-label">
+              Legenda
+              <select
+                value={settings.showLegend ? "true" : "false"}
+                onChange={(event) => updateChartSetting(chartId, "showLegend", event.target.value === "true")}
+              >
+                <option value="true">Mostrar</option>
+                <option value="false">Ocultar</option>
+              </select>
+            </label>
+
+            <div className="chart-slice-colors">
+              <span>Cores das partes</span>
+
+              <div className="chart-slice-color-grid">
+                {chartData.map((row, sliceIndex) => {
+                  const label = xKey ? String(row?.[xKey] ?? `Parte ${sliceIndex + 1}`) : `Parte ${sliceIndex + 1}`;
+
+                  return (
+                    <label className="chart-slice-color-item" key={`${chartId}-slice-${sliceIndex}`} title={label}>
+                      <span>{label}</span>
+                      <input
+                        type="color"
+                        value={getPieColor(settings, sliceIndex)}
+                        onChange={(event) => updatePieSliceColor(chartId, sliceIndex, event.target.value)}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </>
     );
   }
