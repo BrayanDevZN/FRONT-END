@@ -61,6 +61,8 @@ export default function SidebarWithDataSources() {
   const [dashboardToDelete, setDashboardToDelete] = useState(null);
 
   const activeArea = useMemo(() => {
+    if (location.pathname.startsWith("/home")) return "inicio";
+    if (location.pathname.startsWith("/dashboards")) return "dashboards";
     if (location.pathname.startsWith("/chat")) return "ia";
     if (location.pathname.startsWith("/data-sources")) return "data-sources";
     if (location.pathname.startsWith("/help")) return "help";
@@ -74,6 +76,10 @@ export default function SidebarWithDataSources() {
 
   function goToChat(id, title) {
     navigate(`/chat/${id}`, { state: { title } });
+  }
+
+  function goToHome() {
+    navigate("/home");
   }
 
   function goToDashboard(id) {
@@ -312,7 +318,7 @@ export default function SidebarWithDataSources() {
       );
 
       if (window.location.pathname === `/chat/${conversationToDelete}`) {
-        navigate("/dashboards");
+        navigate("/home");
       }
 
       setConversationToDelete(null);
@@ -404,7 +410,7 @@ export default function SidebarWithDataSources() {
             <button
               type="button"
               className="sidebar-logo-button"
-              onClick={() => navigate("/dashboards")}
+              onClick={goToHome}
               aria-label="Ir para o início"
             >
               {collapsed ? (
@@ -421,7 +427,7 @@ export default function SidebarWithDataSources() {
               className={`sidebar-nav-item ${
                 activeArea === "inicio" ? "is-active" : ""
               }`}
-              onClick={() => navigate("/dashboards")}
+              onClick={goToHome}
               title="Início"
             >
               <Home size={20} />

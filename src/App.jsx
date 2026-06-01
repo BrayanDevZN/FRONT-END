@@ -6,6 +6,8 @@ import Register from "./pages/Register";
 import RegisterCode from "./pages/RegisterCode";
 import ForgotPassword from "./pages/ForgotPassword";
 import ForgotPasswordCode from "./pages/ForgotPasswordCode";
+
+import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import SettingsRecoverPassword from "./pages/SettingsRecoverPassword";
@@ -22,12 +24,21 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Login />} />
+
         <Route path="/register" element={<Register />} />
         <Route path="/register-code" element={<RegisterCode />} />
+
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/forgot-password-code" element={<ForgotPasswordCode />} />
 
-        <Route path="/home" element={<Navigate to="/dashboards" replace />} />
+        <Route
+          path="/home"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
 
         <Route
           path="/dashboards"
@@ -43,6 +54,15 @@ function App() {
           element={
             <PrivateRoute>
               <DataSources />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/chat"
+          element={
+            <PrivateRoute>
+              <Chat />
             </PrivateRoute>
           }
         />
@@ -101,7 +121,7 @@ function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/dashboards" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
 
       <Toaster

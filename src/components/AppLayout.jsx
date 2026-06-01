@@ -13,14 +13,41 @@ import { getConversations } from "../api/accountsApi";
 import { getDashboards } from "../api/dashboardApi";
 
 const PAGE_TITLES = {
-  dashboards: "Início",
+  home: "Início",
+  dashboards: "Dashboards",
   chat: "IA Financeira",
   settings: "Configurações",
+  dataSources: "Fontes de Dados",
   movimentacoes: "Movimentações",
   relatorios: "Relatórios",
+  help: "Ajuda",
 };
 
 function getPageInfo(pathname) {
+  if (pathname.startsWith("/home")) {
+    return {
+      key: "home",
+      title: PAGE_TITLES.home,
+      subtitle: "Central da plataforma.",
+    };
+  }
+
+  if (pathname.startsWith("/dashboards")) {
+    return {
+      key: "dashboards",
+      title: PAGE_TITLES.dashboards,
+      subtitle: "Visualize dashboards, gráficos e análises geradas.",
+    };
+  }
+
+  if (pathname.startsWith("/data-sources")) {
+    return {
+      key: "dataSources",
+      title: PAGE_TITLES.dataSources,
+      subtitle: "Gerencie planilhas e fontes usadas nas análises.",
+    };
+  }
+
   if (pathname.startsWith("/chat")) {
     return {
       key: "chat",
@@ -37,14 +64,41 @@ function getPageInfo(pathname) {
     };
   }
 
+  if (pathname.startsWith("/help")) {
+    return {
+      key: "help",
+      title: PAGE_TITLES.help,
+      subtitle: "Encontre ajuda para usar a plataforma.",
+    };
+  }
+
+  if (pathname.startsWith("/movimentacoes")) {
+    return {
+      key: "movimentacoes",
+      title: PAGE_TITLES.movimentacoes,
+      subtitle: "Acompanhe suas movimentações.",
+    };
+  }
+
+  if (pathname.startsWith("/relatorios")) {
+    return {
+      key: "relatorios",
+      title: PAGE_TITLES.relatorios,
+      subtitle: "Consulte seus relatórios.",
+    };
+  }
+
   return {
-    key: "dashboards",
-    title: PAGE_TITLES.dashboards,
-    subtitle: "Resumo dos dashboards, análises e arquivos processados.",
+    key: "home",
+    title: PAGE_TITLES.home,
+    subtitle: "Central da plataforma.",
   };
 }
 
-export default function AppLayout({ children }) {
+export default function AppLayout({
+  children,
+  hideTopbar = false,
+}) {
   const location = useLocation();
   const navigate = useNavigate();
   const page = getPageInfo(location.pathname);
@@ -81,8 +135,10 @@ export default function AppLayout({ children }) {
   }
 
   useEffect(() => {
-    loadSearchData();
-  }, [location.pathname]);
+    if (!hideTopbar) {
+      loadSearchData();
+    }
+  }, [location.pathname, hideTopbar]);
 
   const searchResults = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -139,87 +195,85 @@ export default function AppLayout({ children }) {
       <Sidebar />
 
       <section className="app-shell">
-        <header className="topbar">
-          <div className="topbar-title">
-            <span className="topbar-eyebrow">
-              DataPilot AI
-            </span>
+        {!hideTopbar && (
+          <header className="topbar">
+            <div className="topbar-title">
+              <span className="topbar-eyebrow">
+                DataPilot AI
+              </span>
 
-            <h1>{page.title}</h1>
+              <h1>{page.title}</h1>
 
-            <p>{page.subtitle}</p>
-          </div>
+              <p>{page.subtitle}</p>
+            </div>
 
-          <div className="topbar-actions">
-            <div className="topbar-search-wrapper">
-              <label
-                className="topbar-search"
-                aria-label="Pesquisar"
-              >
-                <Search size={18} />
+            <div className="topbar-actions">
+              <div className="topbar-search-wrapper">
+                <label
+                  className="topbar-search"
+                  aria-label="Pesquisar"
+                >
+                  <Search size={18} />
 
-                <input
-                  value={search}
-                  placeholder="Pesquisar dashboards e chats..."
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setShowSuggestions(true);
-                  }}
-                  onFocus={() =>
-                    setShowSuggestions(true)
-                  }
-                />
-              </label>
+                  <input
+                    value={search}
+                    placeholder="Pesquisar dashboards e chats..."
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() =>
+                      setShowSuggestions(true)
+                    }
+                  />
+                </label>
 
-              {showSuggestions && search.trim() && (
-                <div className="topbar-search-suggestions">
-                  {hasResults ? (
-                    <>
-                      {searchResults.dashboards.length > 0 && (
-                        <div className="search-group">
-                          <span className="search-group-title">
-                            Dashboards
-                          </span>
+                {showSuggestions && search.trim() && (
+                  <div className="topbar-search-suggestions">
+                    {hasResults ? (
+                      <>
+                        {searchResults.dashboards.length > 0 && (
+                          <div className="search-group">
+                            <span className="search-group-title">
+                              Dashboards
+                            </span>
 
-                          {searchResults.dashboards.map(
-                            (dashboard) => (
-                              <button
-                                key={dashboard.id}
-                                type="button"
-                                onMouseDown={(e) =>
-                                  e.preventDefault()
-                                }
-                                onClick={() =>
-                                  openDashboard(
-                                    dashboard.id
-                                  )
-                                }
-                              >
-                                <BarChart3 size={17} />
+                            {searchResults.dashboards.map(
+                              (dashboard) => (
+                                <button
+                                  key={dashboard.id}
+                                  type="button"
+                                  onMouseDown={(event) =>
+                                    event.preventDefault()
+                                  }
+                                  onClick={() =>
+                                    openDashboard(dashboard.id)
+                                  }
+                                >
+                                  <BarChart3 size={17} />
 
-                                <div>
-                                  <strong>
-                                    {dashboard.title}
-                                  </strong>
+                                  <div>
+                                    <strong>
+                                      {dashboard.title}
+                                    </strong>
 
-                                  <span>
-                                    Abrir dashboard
-                                  </span>
-                                </div>
-                              </button>
-                            )
-                          )}
-                        </div>
-                      )}
+                                    <span>
+                                      Abrir dashboard
+                                    </span>
+                                  </div>
+                                </button>
+                              )
+                            )}
+                          </div>
+                        )}
 
-                      {searchResults.chats.length > 0 && (
-                        <div className="search-group">
-                          <span className="search-group-title">
-                            Chats
-                          </span>
+                        {searchResults.chats.length > 0 && (
+                          <div className="search-group">
+                            <span className="search-group-title">
+                              Chats
+                            </span>
 
-                          {searchResults.chats.map(
-                            (chat) => {
+                            {searchResults.chats.map((chat) => {
                               const id =
                                 chat.conversation_id ||
                                 chat.id;
@@ -232,8 +286,8 @@ export default function AppLayout({ children }) {
                                 <button
                                   key={id}
                                   type="button"
-                                  onMouseDown={(e) =>
-                                    e.preventDefault()
+                                  onMouseDown={(event) =>
+                                    event.preventDefault()
                                   }
                                   onClick={() =>
                                     openChat(chat)
@@ -252,55 +306,61 @@ export default function AppLayout({ children }) {
                                   </div>
                                 </button>
                               );
-                            }
-                          )}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <p className="search-empty">
-                      Nenhum resultado encontrado.
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
+                            })}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="search-empty">
+                        Nenhum resultado encontrado.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
 
-            <div className="topbar-cta-group">
-              <button
-                type="button"
-                className="topbar-cta topbar-cta-secondary"
-                onClick={() =>
-                  window.dispatchEvent(
-                    new Event("open-chat-modal")
-                  )
-                }
-              >
-                <MessageSquareText size={18} />
-                <span>Novo chat</span>
-                <Plus size={16} />
-              </button>
-
-              <button
-                type="button"
-                className="topbar-cta"
-                onClick={() =>
-                  window.dispatchEvent(
-                    new Event(
-                      "open-dashboard-modal"
+              <div className="topbar-cta-group">
+                <button
+                  type="button"
+                  className="topbar-cta topbar-cta-secondary"
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new Event("open-chat-modal")
                     )
-                  )
-                }
-              >
-                <BarChart3 size={18} />
-                <span>Novo dashboard</span>
-                <Plus size={16} />
-              </button>
-            </div>
-          </div>
-        </header>
+                  }
+                >
+                  <MessageSquareText size={18} />
+                  <span>Novo chat</span>
+                  <Plus size={16} />
+                </button>
 
-        <section className="app-content">
+                <button
+                  type="button"
+                  className="topbar-cta"
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new Event(
+                        "open-dashboard-modal"
+                      )
+                    )
+                  }
+                >
+                  <BarChart3 size={18} />
+                  <span>Novo dashboard</span>
+                  <Plus size={16} />
+                </button>
+              </div>
+            </div>
+          </header>
+        )}
+
+        <section
+          className={
+            hideTopbar
+              ? "app-content app-content-full"
+              : "app-content"
+          }
+        >
           {children}
         </section>
       </section>
