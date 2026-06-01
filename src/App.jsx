@@ -13,6 +13,7 @@ import Dashboards from "./pages/Dashboards";
 import Movimentacoes from "./pages/Movimentacoes";
 import Relatorios from "./pages/Relatorios";
 import Help from "./pages/Help";
+import DataSources from "./pages/DataSources";
 
 import PrivateRoute from "./routes/PrivateRoute";
 
@@ -33,6 +34,15 @@ function App() {
           element={
             <PrivateRoute>
               <Dashboards />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/data-sources"
+          element={
+            <PrivateRoute>
+              <DataSources />
             </PrivateRoute>
           }
         />

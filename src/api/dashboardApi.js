@@ -21,6 +21,8 @@ async function parseResponse(response, fallbackMessage) {
       message = data.error;
     }
 
+    console.log("ERRO COMPLETO DA API:", data);
+
     throw new Error(message);
   }
 
@@ -47,13 +49,18 @@ function normalizeChartsPayload(data) {
   };
 }
 
-export async function generateDashboard({ token, title, prompt, file }) {
+export async function generateDashboard({
+  token,
+  title,
+  prompt,
+  data_source_id,
+}) {
   const formData = new FormData();
 
   formData.append("token", token);
   formData.append("title", title);
   formData.append("prompt", prompt || "");
-  formData.append("file", file);
+  formData.append("data_source_id", String(data_source_id));
 
   const response = await fetch(`${AI_URL}/dashboard/analyze`, {
     method: "POST",

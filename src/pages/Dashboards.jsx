@@ -420,7 +420,6 @@ export default function Dashboards() {
 
   function isNumericLike(value) {
     if (value === null || value === undefined || value === "") return false;
-
     if (typeof value === "number") return !Number.isNaN(value);
 
     const normalized = String(value)
@@ -465,7 +464,7 @@ export default function Dashboards() {
     );
   }
 
-  function findNumericKey(data, preferredKey, categoryKey = null) {
+  function findNumericKey(data, preferredKey, categoryKey = null, allowFallback = true) {
     const firstItem = data?.[0] || {};
     const keys = Object.keys(firstItem);
 
@@ -479,6 +478,10 @@ export default function Dashboards() {
       return realPreferredKey;
     }
 
+    if (!allowFallback) {
+      return null;
+    }
+
     return (
       keys.find((key) => key !== categoryKey && isMostlyNumeric(data, key)) ||
       keys.find((key) => key !== categoryKey) ||
@@ -487,83 +490,203 @@ export default function Dashboards() {
     );
   }
 
+  function getMetricConfig(currentChart) {
+    const metric = currentChart?.metric;
+    const firstMetric = Array.isArray(metric) ? metric[0] : metric;
+
+    return (
+      currentChart?.chart_config?.y ||
+      currentChart?.config?.y ||
+      currentChart?.y ||
+      currentChart?.yKey ||
+      firstMetric
+    );
+  }
+
+  function getXAxisConfig(currentChart) {
+    return (
+      currentChart?.chart_config?.x ||
+      currentChart?.config?.x ||
+      currentChart?.x ||
+      currentChart?.xKey ||
+      currentChart?.time_column ||
+      currentChart?.group_by?.[0]
+    );
+  }
+
+  function looksLikeDateKey(key) {
+    const normalized = normalizeKey(key);
+
+    return (
+      normalized.includes("data") ||
+      normalized.includes("date") ||
+      normalized.includes("dia") ||
+      normalized.includes("mes") ||
+      normalized.includes("ano") ||
+      normalized.includes("periodo")
+    );
+  }
+
+  function titleMentionsMetric(title, metricKey) {
+    if (!title || !metricKey) return false;
+
+    const normalizedTitle = normalizeKey(title);
+    const normalizedMetric = normalizeKey(metricKey);
+
+    if (normalizedTitle.includes(normalizedMetric)) return true;
+
+    const aliases = {
+      cliques: ["clique", "cliques", "click", "clicks"],
+      impressoes: ["impressao", "impressoes", "impression", "impressions"],
+      conversoes: ["conversao", "conversoes", "conversion", "conversions"],
+      receita: ["receita", "faturamento", "revenue"],
+      investimento: ["investimento", "gasto", "custo", "spend", "cost"],
+      vendas: ["venda", "vendas", "sales"],
+      quantidade: ["quantidade", "qtd", "volume"],
+    };
+
+    return Object.values(aliases).some((group) => {
+      const metricMatchesGroup = group.some((alias) => normalizedMetric.includes(alias));
+      const titleMatchesGroup = group.some((alias) => normalizedTitle.includes(alias));
+      return metricMatchesGroup && titleMatchesGroup;
+    });
+  }
+
   function getChartKeys(data, currentChart) {
     const firstItem = data?.[0] || {};
     const keys = Object.keys(firstItem);
 
     if (keys.length === 0) {
-      return {
-        xKey: null,
-        yKey: null,
-      };
+      return { xKey: null, yKey: null };
     }
 
     const chartType = currentChart?.chart_type || currentChart?.type || "bar";
+    const operation = currentChart?.operation;
 
-    const configX =
-      currentChart?.chart_config?.x ||
-      currentChart?.config?.x ||
-      currentChart?.x ||
-      currentChart?.xKey;
+    const configX = getXAxisConfig(currentChart);
+    const configY = getMetricConfig(currentChart);
 
-    const configY =
-      currentChart?.chart_config?.y ||
-      currentChart?.config?.y ||
-      currentChart?.y ||
-      currentChart?.yKey;
+    if (chartType === "table" || operation === "table") {
+      return {
+        xKey: keys[0] || null,
+        yKey: keys[1] || keys[0] || null,
+      };
+    }
 
-    let xKey = findRealKey(data, configX);
-    let yKey = findRealKey(data, configY);
+    if (chartType === "scatter" || operation === "scatter") {
+      const numericKeys = keys.filter((key) => isMostlyNumeric(data, key));
 
-    if (chartType === "horizontal_bar") {
-      yKey = findNumericKey(data, configY, null);
-      xKey = findCategoryKey(data, configX, yKey);
+      let xKey = findRealKey(data, configX);
+      let yKey = findRealKey(data, configY);
+
+      if (!xKey || !isMostlyNumeric(data, xKey)) {
+        xKey = numericKeys[0] || null;
+      }
+
+      if (!yKey || yKey === xKey || !isMostlyNumeric(data, yKey)) {
+        yKey = numericKeys.find((key) => key !== xKey) || null;
+      }
 
       return { xKey, yKey };
     }
 
-    if (!xKey) {
+    if (operation === "count" || configY === "count") {
+      const yKey = findRealKey(data, "count") || keys.find((key) => normalizeKey(key) === "count") || null;
+      const xKey = findCategoryKey(data, configX, yKey);
+
+      return { xKey, yKey };
+    }
+
+    let yKey = findNumericKey(data, configY, null, true);
+    let xKey = findCategoryKey(data, configX, yKey);
+
+    if (chartType === "horizontal_bar") {
+      const explicitY = findNumericKey(data, configY, null, false);
+
+      if (explicitY) {
+        yKey = explicitY;
+      }
+
       xKey = findCategoryKey(data, configX, yKey);
     }
 
-    if (!yKey || yKey === xKey || !isMostlyNumeric(data, yKey)) {
-      yKey = findNumericKey(data, configY, xKey);
-    }
+    const title = currentChart?.title || "";
 
-    if (chartType === "scatter") {
-      const numericKeys = keys.filter((key) => isMostlyNumeric(data, key));
+    if (
+      yKey &&
+      title &&
+      !titleMentionsMetric(title, yKey) &&
+      keys.some((key) => isMostlyNumeric(data, key) && titleMentionsMetric(title, key))
+    ) {
+      const titleMetricKey = keys.find(
+        (key) => isMostlyNumeric(data, key) && titleMentionsMetric(title, key)
+      );
 
-      if (numericKeys.length >= 2) {
-        xKey = findRealKey(data, configX);
-        yKey = findRealKey(data, configY);
-
-        if (!xKey || !isMostlyNumeric(data, xKey)) {
-          xKey = numericKeys[0];
-        }
-
-        if (!yKey || yKey === xKey || !isMostlyNumeric(data, yKey)) {
-          yKey = numericKeys.find((key) => key !== xKey) || numericKeys[1];
-        }
+      if (titleMetricKey) {
+        yKey = titleMetricKey;
       }
     }
 
-    return {
-      xKey,
-      yKey,
-    };
+    if (xKey && yKey && xKey === yKey) {
+      xKey =
+        keys.find((key) => key !== yKey && !isMostlyNumeric(data, key)) ||
+        keys.find((key) => key !== yKey) ||
+        null;
+    }
+
+    if (!xKey && operation === "time_groupby") {
+      xKey = keys.find(looksLikeDateKey) || findCategoryKey(data, configX, yKey);
+    }
+
+    return { xKey, yKey };
+  }
+
+  function parseNumericValue(value) {
+    if (typeof value === "number") return value;
+
+    const normalized = String(value ?? "")
+      .trim()
+      .replace(/\./g, "")
+      .replace(",", ".");
+
+    const parsed = Number(normalized);
+
+    return Number.isNaN(parsed) ? 0 : parsed;
   }
 
   function formatChartData(data, yKey) {
     if (!yKey) return data;
 
-    return data.map((item) => {
-      const value = item[yKey];
+    return data.map((item) => ({
+      ...item,
+      [yKey]: parseNumericValue(item[yKey]),
+    }));
+  }
 
-      return {
-        ...item,
-        [yKey]: typeof value === "number" ? value : Number(String(value).replace(",", ".")) || 0,
-      };
-    });
+  function formatTooltipValue(value) {
+    if (typeof value === "number") {
+      return value.toLocaleString("pt-BR", {
+        maximumFractionDigits: 2,
+      });
+    }
+
+    return String(value ?? "");
+  }
+
+  function CustomTooltip({ active, payload, label }) {
+    if (!active || !payload || payload.length === 0) return null;
+
+    return (
+      <div className="custom-chart-tooltip">
+        <strong>{label}</strong>
+
+        {payload.map((item, index) => (
+          <p key={`${item.name}-${index}`}>
+            {item.name}: {formatTooltipValue(item.value)}
+          </p>
+        ))}
+      </div>
+    );
   }
 
   useEffect(() => {
@@ -669,11 +792,24 @@ export default function Dashboards() {
   function renderChart(currentChart, settings) {
     const rawChartData = getRawChartData(currentChart);
     const chartType = currentChart?.chart_type || currentChart?.type || "bar";
+    const operation = currentChart?.operation;
+
     const { xKey, yKey } = getChartKeys(rawChartData, currentChart);
     const chartData = formatChartData(rawChartData, yKey);
 
-    if (!currentChart || chartData.length === 0 || !xKey || !yKey) {
+    if (!currentChart || chartData.length === 0) {
       return <p>Sem dados para exibir.</p>;
+    }
+
+    if (chartType !== "table" && (!xKey || !yKey)) {
+      console.log("Gráfico com configuração incompleta:", {
+        currentChart,
+        rawChartData,
+        xKey,
+        yKey,
+      });
+
+      return <p>Configuração do gráfico incompleta.</p>;
     }
 
     const chartWidth =
@@ -696,6 +832,19 @@ export default function Dashboards() {
       padding: 24,
     };
 
+    if (chartType === "kpi" || operation === "kpi") {
+      const value = chartData?.[0]?.[yKey];
+
+      return (
+        <div className="chart-scroll">
+          <div style={chartWrapperStyle} className="dashboard-kpi-card">
+            <span>{currentChart.title || yKey}</span>
+            <strong>{formatTooltipValue(value)}</strong>
+          </div>
+        </div>
+      );
+    }
+
     if (chartType === "line") {
       return (
         <div className="chart-scroll">
@@ -705,10 +854,11 @@ export default function Dashboards() {
                 {renderGrid(settings)}
                 {renderXAxis(xKey, settings)}
                 {renderYAxis(yKey, settings)}
-                <Tooltip />
+                <Tooltip content={<CustomTooltip />} />
                 <Line
                   type="monotone"
                   dataKey={yKey}
+                  name={yKey}
                   stroke={settings.chartColor}
                   strokeWidth={4}
                   dot={{ r: 5, fill: settings.chartColor }}
@@ -729,10 +879,11 @@ export default function Dashboards() {
                 {renderGrid(settings)}
                 {renderXAxis(xKey, settings)}
                 {renderYAxis(yKey, settings)}
-                <Tooltip />
+                <Tooltip content={<CustomTooltip />} />
                 <Area
                   type="monotone"
                   dataKey={yKey}
+                  name={yKey}
                   stroke={settings.chartColor}
                   fill={settings.chartColor}
                   fillOpacity={0.24}
@@ -751,7 +902,8 @@ export default function Dashboards() {
           <div style={chartWrapperStyle}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Tooltip />
+                <Tooltip content={<CustomTooltip />} />
+
                 {settings.showLegend && (
                   <Legend
                     verticalAlign="bottom"
@@ -763,6 +915,7 @@ export default function Dashboards() {
                     }}
                   />
                 )}
+
                 <Pie
                   data={chartData}
                   dataKey={yKey}
@@ -772,10 +925,7 @@ export default function Dashboards() {
                   label
                 >
                   {chartData.map((_, index) => (
-                    <Cell
-                      key={`slice-${index}`}
-                      fill={getPieColor(settings, index)}
-                    />
+                    <Cell key={`slice-${index}`} fill={getPieColor(settings, index)} />
                   ))}
                 </Pie>
               </PieChart>
@@ -794,8 +944,8 @@ export default function Dashboards() {
                 {renderGrid(settings)}
                 {renderXAxis(xKey, settings)}
                 {renderYAxis(yKey, settings, true)}
-                <Tooltip />
-                <Scatter data={chartData} fill={settings.chartColor} />
+                <Tooltip content={<CustomTooltip />} />
+                <Scatter data={chartData} fill={settings.chartColor} name={yKey} />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
@@ -839,10 +989,11 @@ export default function Dashboards() {
                   tickLine={{ stroke: "#94a3b8" }}
                 />
 
-                <Tooltip />
+                <Tooltip content={<CustomTooltip />} />
 
                 <Bar
                   dataKey={yKey}
+                  name={yKey}
                   fill={settings.chartColor}
                   radius={[0, 10, 10, 0]}
                   barSize={Math.min(getBarSize(settings.barStyle), 46)}
@@ -890,9 +1041,10 @@ export default function Dashboards() {
               {renderGrid(settings)}
               {renderXAxis(xKey, settings)}
               {renderYAxis(yKey, settings)}
-              <Tooltip />
+              <Tooltip content={<CustomTooltip />} />
               <Bar
                 dataKey={yKey}
+                name={yKey}
                 fill={settings.chartColor}
                 radius={getBarRadius(settings.barStyle)}
                 barSize={getBarSize(settings.barStyle)}

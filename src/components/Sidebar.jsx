@@ -4,6 +4,7 @@ import {
   BarChart3,
   ChevronLeft,
   CircleHelp,
+  Database,
   Home,
   LayoutDashboard,
   LogOut,
@@ -12,7 +13,6 @@ import {
   Settings,
   Sparkles,
   Trash2,
-  UploadCloud,
 } from "lucide-react";
 
 import {
@@ -27,15 +27,17 @@ import {
   deleteDashboard,
 } from "../api/dashboardApi";
 
+import { getDataSources } from "../api/dataSourceApi";
 import { getToken, removeToken } from "../utils/storage";
 
-export default function Sidebar() {
+export default function SidebarWithDataSources() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const [collapsed, setCollapsed] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [dashboards, setDashboards] = useState([]);
+  const [dashboardSources, setDashboardSources] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const [showNewChatModal, setShowNewChatModal] = useState(false);
@@ -44,7 +46,7 @@ export default function Sidebar() {
   const [showNewDashboardModal, setShowNewDashboardModal] = useState(false);
   const [dashboardTitle, setDashboardTitle] = useState("");
   const [dashboardPrompt, setDashboardPrompt] = useState("");
-  const [dashboardFile, setDashboardFile] = useState(null);
+  const [selectedDataSourceId, setSelectedDataSourceId] = useState("");
 
   const [modalError, setModalError] = useState("");
 
@@ -60,6 +62,7 @@ export default function Sidebar() {
 
   const activeArea = useMemo(() => {
     if (location.pathname.startsWith("/chat")) return "ia";
+    if (location.pathname.startsWith("/data-sources")) return "data-sources";
     if (location.pathname.startsWith("/help")) return "help";
     if (location.pathname.startsWith("/settings")) return "settings";
     return "inicio";
@@ -75,6 +78,12 @@ export default function Sidebar() {
 
   function goToDashboard(id) {
     navigate(`/dashboards?dashboard_id=${id}`);
+  }
+
+  function goToDataSources() {
+    setShowNewDashboardModal(false);
+    setModalError("");
+    navigate("/data-sources");
   }
 
   async function loadConversations() {
@@ -115,6 +124,30 @@ export default function Sidebar() {
     }
   }
 
+  async function loadDashboardSources() {
+    try {
+      const token = getToken();
+
+      if (!token) {
+        navigate("/");
+        return;
+      }
+
+      const response = await getDataSources(token);
+      const sources = response?.data_sources || [];
+
+      setDashboardSources(sources);
+
+      if (sources.length > 0) {
+        setSelectedDataSourceId(String(sources[0].id));
+      }
+    } catch (err) {
+      console.error("Erro ao carregar fontes de dados:", err);
+      setDashboardSources([]);
+      setSelectedDataSourceId("");
+    }
+  }
+
   function openNewChatModal() {
     setChatTitle("");
     setModalError("");
@@ -132,9 +165,10 @@ export default function Sidebar() {
   function openNewDashboardModal() {
     setDashboardTitle("");
     setDashboardPrompt("");
-    setDashboardFile(null);
+    setSelectedDataSourceId("");
     setModalError("");
     setShowNewDashboardModal(true);
+    loadDashboardSources();
   }
 
   function closeNewDashboardModal() {
@@ -142,7 +176,7 @@ export default function Sidebar() {
 
     setDashboardTitle("");
     setDashboardPrompt("");
-    setDashboardFile(null);
+    setSelectedDataSourceId("");
     setModalError("");
     setShowNewDashboardModal(false);
   }
@@ -207,13 +241,13 @@ export default function Sidebar() {
       return;
     }
 
-    if (!prompt) {
-      setModalError("Digite o prompt da análise.");
+    if (!selectedDataSourceId) {
+      setModalError("Selecione uma fonte de dados.");
       return;
     }
 
-    if (!dashboardFile) {
-      setModalError("Selecione um arquivo CSV, XLSX ou JSON.");
+    if (!prompt) {
+      setModalError("Digite o prompt da análise.");
       return;
     }
 
@@ -232,7 +266,7 @@ export default function Sidebar() {
         token,
         title,
         prompt,
-        file: dashboardFile,
+        data_source_id: Number(selectedDataSourceId),
       });
 
       const createdDashboard = response?.dashboard;
@@ -241,7 +275,7 @@ export default function Sidebar() {
 
       setDashboardTitle("");
       setDashboardPrompt("");
-      setDashboardFile(null);
+      setSelectedDataSourceId("");
       setShowNewDashboardModal(false);
 
       if (createdDashboard?.id) {
@@ -347,11 +381,7 @@ export default function Sidebar() {
     }
 
     function handleOpenDashboardModal() {
-      setDashboardTitle("");
-      setDashboardPrompt("");
-      setDashboardFile(null);
-      setModalError("");
-      setShowNewDashboardModal(true);
+      openNewDashboardModal();
     }
 
     window.addEventListener("open-chat-modal", handleOpenChatModal);
@@ -396,6 +426,18 @@ export default function Sidebar() {
             >
               <Home size={20} />
               {!collapsed && <span>Início</span>}
+            </button>
+
+            <button
+              type="button"
+              className={`sidebar-nav-item ${
+                activeArea === "data-sources" ? "is-active" : ""
+              }`}
+              onClick={() => navigate("/data-sources")}
+              title="Fontes de Dados"
+            >
+              <Database size={20} />
+              {!collapsed && <span>Fontes de Dados</span>}
             </button>
           </nav>
 
@@ -629,7 +671,7 @@ export default function Sidebar() {
             </div>
 
             <h2>Novo dashboard</h2>
-            <p>Envie uma planilha e descreva qual análise a IA deve gerar.</p>
+            <p>Escolha uma fonte de dados e descreva qual análise a IA deve gerar.</p>
 
             <label className="settings-label">
               Nome do dashboard
@@ -642,27 +684,69 @@ export default function Sidebar() {
             </label>
 
             <label className="settings-label">
+              Fonte de dados
+
+              <div className="dashboard-source-picker">
+                {dashboardSources.length === 0 ? (
+                  <div className="dashboard-source-empty">
+                    <Database size={24} />
+
+                    <span>Nenhuma fonte cadastrada ainda.</span>
+
+                    <button type="button" onClick={goToDataSources}>
+                      <Plus size={16} />
+                      Criar nova fonte
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="dashboard-source-list">
+                      {dashboardSources.map((source) => (
+                        <button
+                          key={source.id}
+                          type="button"
+                          className={`dashboard-source-option ${
+                            Number(selectedDataSourceId) === Number(source.id)
+                              ? "is-selected"
+                              : ""
+                          }`}
+                          onClick={() =>
+                            setSelectedDataSourceId(String(source.id))
+                          }
+                        >
+                          <Database size={18} />
+
+                          <span>
+                            <strong>{source.name}</strong>
+                            <small>
+                              {source.row_count || 0} linhas •{" "}
+                              {source.column_count || 0} colunas
+                            </small>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      className="dashboard-source-add-button"
+                      onClick={goToDataSources}
+                    >
+                      <Plus size={16} />
+                      Adicionar nova fonte
+                    </button>
+                  </>
+                )}
+              </div>
+            </label>
+
+            <label className="settings-label">
               Prompt da análise
               <textarea
                 value={dashboardPrompt}
                 onChange={(event) => setDashboardPrompt(event.target.value)}
                 placeholder="Ex: Analise os produtos mais vendidos"
               />
-            </label>
-
-            <label className="settings-label">
-              Arquivo
-              <label className="custom-file-upload">
-                <input
-                  type="file"
-                  accept=".csv,.xlsx,.xls,.json"
-                  onChange={(event) => setDashboardFile(event.target.files[0])}
-                />
-                <UploadCloud size={18} />
-                <span>
-                  {dashboardFile ? dashboardFile.name : "Selecionar arquivo"}
-                </span>
-              </label>
             </label>
 
             {modalError && <p className="modal-error">{modalError}</p>}
