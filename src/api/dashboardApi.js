@@ -67,9 +67,93 @@ export async function generateDashboard({
     body: formData,
   });
 
-  const data = await parseResponse(response, "Erro ao gerar dashboard.");
+  const data = await parseResponse(
+    response,
+    "Erro ao gerar dashboard."
+  );
 
   return normalizeChartsPayload(data);
+}
+
+export async function refreshDashboard({
+  token,
+  dashboard,
+}) {
+  if (!dashboard?.id) {
+    throw new Error("Dashboard inválido.");
+  }
+
+  if (!dashboard?.data_source_id) {
+    throw new Error("Este dashboard não está ligado a uma fonte de dados.");
+  }
+
+  const formData = new FormData();
+
+  formData.append("token", token);
+  formData.append("title", dashboard.title || "Dashboard");
+  formData.append("prompt", dashboard.prompt || "");
+  formData.append("data_source_id", String(dashboard.data_source_id));
+  formData.append("dashboard_id", String(dashboard.id));
+
+  const response = await fetch(`${AI_URL}/dashboard/analyze`, {
+    method: "POST",
+    body: formData,
+  });
+
+  const analyzedData = normalizeChartsPayload(
+    await parseResponse(
+      response,
+      "Erro ao atualizar análise do dashboard."
+    )
+  );
+
+  const finishResponse = await fetch(
+    `${ACCOUNTS_URL}/dashboard/refresh/finish`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        token,
+        dashboard_id: Number(dashboard.id),
+        ai_suggestion:
+          analyzedData.ai_suggestion ||
+          analyzedData.dashboard?.ai_suggestion ||
+          analyzedData.answer ||
+          "",
+        charts:
+          analyzedData.charts ||
+          analyzedData.dashboard?.charts ||
+          [],
+      }),
+    }
+  );
+
+  const savedData = await parseResponse(
+    finishResponse,
+    "Erro ao salvar atualização do dashboard."
+  );
+
+  return normalizeChartsPayload(savedData);
+}
+
+export async function refreshDashboards({
+  token,
+  dashboards,
+}) {
+  const results = [];
+
+  for (const dashboard of dashboards || []) {
+    const result = await refreshDashboard({
+      token,
+      dashboard,
+    });
+
+    results.push(result);
+  }
+
+  return results;
 }
 
 export async function getDashboards(token) {
@@ -96,7 +180,10 @@ export async function getDashboard(token, dashboard_id) {
     }),
   });
 
-  const data = await parseResponse(response, "Erro ao abrir dashboard.");
+  const data = await parseResponse(
+    response,
+    "Erro ao abrir dashboard."
+  );
 
   return normalizeChartsPayload(data);
 }
@@ -148,13 +235,19 @@ export async function saveChartSettings({
     body.chart_id = Number(chart_id);
   }
 
-  const response = await fetch(`${ACCOUNTS_URL}/dashboard/chart/settings`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+  const response = await fetch(
+    `${ACCOUNTS_URL}/dashboard/chart/settings`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    }
+  );
 
-  return parseResponse(response, "Erro ao salvar configurações do gráfico.");
+  return parseResponse(
+    response,
+    "Erro ao salvar configurações do gráfico."
+  );
 }

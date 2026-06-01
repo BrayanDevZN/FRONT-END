@@ -16,9 +16,14 @@ import {
   createDataSource,
   getDataSource,
   getDataSources,
+  getLinkedDashboards,
   updateDataSource,
   deleteDataSource,
 } from "../api/dataSourceApi";
+
+import {
+  refreshDashboards as refreshLinkedDashboards,
+} from "../api/dashboardApi";
 
 const ROWS_STEP = 25;
 
@@ -28,11 +33,14 @@ export default function DataSources() {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [showLinkedDashboardsModal, setShowLinkedDashboardsModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [sourceName, setSourceName] = useState("");
   const [sourceFile, setSourceFile] = useState(null);
   const [updateFile, setUpdateFile] = useState(null);
+  const [pendingUpdateFile, setPendingUpdateFile] = useState(null);
+  const [linkedDashboards, setLinkedDashboards] = useState([]);
 
   const [visibleRows, setVisibleRows] = useState(ROWS_STEP);
 
@@ -40,6 +48,8 @@ export default function DataSources() {
   const [loadingCreate, setLoadingCreate] = useState(false);
   const [loadingUpdate, setLoadingUpdate] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
+  const [loadingLinkedDashboards, setLoadingLinkedDashboards] = useState(false);
+  const [loadingRefreshDashboards, setLoadingRefreshDashboards] = useState(false);
 
   const [error, setError] = useState("");
 
@@ -82,6 +92,14 @@ export default function DataSources() {
     }
   }
 
+  function resetUpdateState() {
+    setUpdateFile(null);
+    setPendingUpdateFile(null);
+    setLinkedDashboards([]);
+    setShowUpdateModal(false);
+    setShowLinkedDashboardsModal(false);
+  }
+
   function closeCreateModal() {
     if (loadingCreate) return;
 
@@ -91,10 +109,9 @@ export default function DataSources() {
   }
 
   function closeUpdateModal() {
-    if (loadingUpdate) return;
+    if (loadingUpdate || loadingLinkedDashboards || loadingRefreshDashboards) return;
 
-    setUpdateFile(null);
-    setShowUpdateModal(false);
+    resetUpdateState();
   }
 
   async function handleCreateSource(event) {
@@ -158,6 +175,57 @@ export default function DataSources() {
     }
 
     try {
+      setLoadingLinkedDashboards(true);
+      setError("");
+
+      const token = getToken();
+
+      const response = await getLinkedDashboards(
+        token,
+        selectedSource.id
+      );
+
+      const dashboards = response?.dashboards || [];
+
+      setPendingUpdateFile(updateFile);
+      setLinkedDashboards(dashboards);
+
+      if (dashboards.length > 0) {
+        setShowUpdateModal(false);
+        setShowLinkedDashboardsModal(true);
+        return;
+      }
+
+      await executeUpdateSource({
+        shouldRefreshDashboards: false,
+        dashboardsToRefresh: [],
+        fileToUpload: updateFile,
+      });
+    } catch (err) {
+      const message = err.message || "Erro ao verificar dashboards vinculados.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setLoadingLinkedDashboards(false);
+    }
+  }
+
+  async function executeUpdateSource({
+    shouldRefreshDashboards,
+    dashboardsToRefresh,
+    fileToUpload,
+  }) {
+    if (!selectedSource?.id) {
+      toast.error("Selecione uma fonte primeiro.");
+      return;
+    }
+
+    if (!fileToUpload) {
+      toast.error("Selecione a nova planilha.");
+      return;
+    }
+
+    try {
       setLoadingUpdate(true);
       setError("");
 
@@ -166,15 +234,26 @@ export default function DataSources() {
       const response = await updateDataSource({
         token,
         data_source_id: selectedSource.id,
-        file: updateFile,
+        file: fileToUpload,
+        refreshDashboards: shouldRefreshDashboards,
       });
 
       const updatedSource = response?.data_source;
 
-      toast.success("Fonte atualizada com sucesso.");
+      if (shouldRefreshDashboards && dashboardsToRefresh.length > 0) {
+        setLoadingRefreshDashboards(true);
 
-      setUpdateFile(null);
-      setShowUpdateModal(false);
+        await refreshLinkedDashboards({
+          token,
+          dashboards: dashboardsToRefresh,
+        });
+
+        toast.success("Fonte e dashboards vinculados atualizados com sucesso.");
+      } else {
+        toast.success("Fonte atualizada com sucesso.");
+      }
+
+      resetUpdateState();
 
       await loadDataSources();
 
@@ -187,7 +266,24 @@ export default function DataSources() {
       toast.error(message);
     } finally {
       setLoadingUpdate(false);
+      setLoadingRefreshDashboards(false);
     }
+  }
+
+  async function handleUpdateOnlySource() {
+    await executeUpdateSource({
+      shouldRefreshDashboards: false,
+      dashboardsToRefresh: [],
+      fileToUpload: pendingUpdateFile,
+    });
+  }
+
+  async function handleUpdateSourceAndDashboards() {
+    await executeUpdateSource({
+      shouldRefreshDashboards: true,
+      dashboardsToRefresh: linkedDashboards,
+      fileToUpload: pendingUpdateFile,
+    });
   }
 
   async function confirmDeleteSource() {
@@ -234,11 +330,12 @@ export default function DataSources() {
     : [];
 
   const previewRows = allRows.slice(0, visibleRows);
-
   const hasMoreRows = previewRows.length < allRows.length;
-
   const previewColumns =
     previewRows.length > 0 ? Object.keys(previewRows[0]) : [];
+
+  const isUpdatingSomething =
+    loadingUpdate || loadingLinkedDashboards || loadingRefreshDashboards;
 
   return (
     <AppLayout>
@@ -519,7 +616,7 @@ export default function DataSources() {
                   type="button"
                   className="modal-cancel"
                   onClick={closeUpdateModal}
-                  disabled={loadingUpdate}
+                  disabled={isUpdatingSomething}
                 >
                   Cancelar
                 </button>
@@ -527,12 +624,81 @@ export default function DataSources() {
                 <button
                   type="submit"
                   className="modal-confirm"
-                  disabled={loadingUpdate}
+                  disabled={isUpdatingSomething}
                 >
-                  {loadingUpdate ? "Atualizando..." : "Atualizar fonte"}
+                  {loadingLinkedDashboards
+                    ? "Verificando dashboards..."
+                    : loadingUpdate
+                      ? "Atualizando..."
+                      : "Continuar"}
                 </button>
               </div>
             </form>
+          </div>
+        )}
+
+        {showLinkedDashboardsModal && (
+          <div className="modal-overlay">
+            <div className="modal-card modal-card-wide">
+              <div className="modal-icon">
+                <RefreshCcw size={22} />
+              </div>
+
+              <h2>Atualizar dashboards vinculados?</h2>
+
+              <p>
+                Essa fonte está ligada a{" "}
+                <strong>{linkedDashboards.length}</strong>{" "}
+                dashboard{linkedDashboards.length === 1 ? "" : "s"}.
+                Ao atualizar todos, as análises serão refeitas usando o mesmo
+                prompt de cada dashboard.
+              </p>
+
+              <div className="linked-dashboard-list">
+                {linkedDashboards.map((dashboard) => (
+                  <div
+                    key={dashboard.id}
+                    className="linked-dashboard-item"
+                  >
+                    <strong>{dashboard.title}</strong>
+                    <small>{dashboard.prompt}</small>
+                  </div>
+                ))}
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="modal-cancel"
+                  onClick={handleUpdateOnlySource}
+                  disabled={isUpdatingSomething}
+                >
+                  Atualizar só a fonte
+                </button>
+
+                <button
+                  type="button"
+                  className="modal-confirm"
+                  onClick={handleUpdateSourceAndDashboards}
+                  disabled={isUpdatingSomething}
+                >
+                  {loadingRefreshDashboards
+                    ? "Atualizando dashboards..."
+                    : loadingUpdate
+                      ? "Atualizando fonte..."
+                      : "Atualizar tudo"}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="modal-link-button"
+                onClick={closeUpdateModal}
+                disabled={isUpdatingSomething}
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         )}
 

@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import toast from "react-hot-toast";
-import { Save, FileDown } from "lucide-react";
+import { Save, FileDown, RefreshCcw } from "lucide-react";
 
 import {
   Area,
@@ -35,6 +35,7 @@ import {
   getDashboards,
   deleteDashboard,
   saveChartSettings,
+  refreshDashboard,
 } from "../api/dashboardApi";
 
 import { getToken } from "../utils/storage";
@@ -87,6 +88,7 @@ export default function Dashboards() {
   const [loadingDelete, setLoadingDelete] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [refreshingDashboard, setRefreshingDashboard] = useState(false);
   const [error, setError] = useState("");
 
   const charts = selectedDashboard?.charts || [];
@@ -300,6 +302,52 @@ export default function Dashboards() {
       toast.error("Erro ao exportar PDF.");
     } finally {
       setExportingPdf(false);
+    }
+  }
+
+  async function handleRefreshDashboard() {
+    if (!selectedDashboard?.id) {
+      setError("Nenhum dashboard selecionado.");
+      toast.error("Nenhum dashboard selecionado.");
+      return;
+    }
+
+    if (!selectedDashboard?.data_source_id) {
+      setError("Este dashboard não está ligado a uma fonte de dados.");
+      toast.error("Este dashboard não está ligado a uma fonte de dados.");
+      return;
+    }
+
+    try {
+      setRefreshingDashboard(true);
+      setError("");
+
+      const token = getToken();
+
+      const response = await refreshDashboard({
+        token,
+        dashboard: selectedDashboard,
+      });
+
+      const refreshedDashboard =
+        response?.dashboard ||
+        response;
+
+      if (refreshedDashboard?.id) {
+        await openDashboard(refreshedDashboard.id);
+      } else {
+        await openDashboard(selectedDashboard.id);
+      }
+
+      await loadDashboards();
+
+      toast.success("Dashboard atualizado com sucesso.");
+    } catch (err) {
+      const message = err.message || "Erro ao atualizar dashboard.";
+      setError(message);
+      toast.error(message);
+    } finally {
+      setRefreshingDashboard(false);
     }
   }
 
@@ -1207,12 +1255,37 @@ export default function Dashboards() {
                   </div>
 
                   <div className="dashboard-actions">
-                    <button type="button" className="dashboard-action-button save-chart-button" onClick={handleSaveChartSettings} disabled={savingSettings}>
+                    <button
+                      type="button"
+                      className="dashboard-action-button save-chart-button"
+                      onClick={handleSaveChartSettings}
+                      disabled={savingSettings || refreshingDashboard}
+                    >
                       <Save size={18} />
                       <span>{savingSettings ? "Salvando..." : "Salvar"}</span>
                     </button>
 
-                    <button type="button" className="dashboard-action-button export-chart-button" onClick={handleExportPdf} disabled={exportingPdf}>
+                    <button
+                      type="button"
+                      className="dashboard-action-button refresh-chart-button"
+                      onClick={handleRefreshDashboard}
+                      disabled={refreshingDashboard || savingSettings || exportingPdf || !selectedDashboard?.data_source_id}
+                      title={
+                        selectedDashboard?.data_source_id
+                          ? "Atualizar dashboard usando a fonte de dados atual"
+                          : "Este dashboard não está ligado a uma fonte de dados"
+                      }
+                    >
+                      <RefreshCcw size={18} />
+                      <span>{refreshingDashboard ? "Atualizando..." : "Atualizar"}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className="dashboard-action-button export-chart-button"
+                      onClick={handleExportPdf}
+                      disabled={exportingPdf || refreshingDashboard}
+                    >
                       <FileDown size={18} />
                       <span>{exportingPdf ? "Exportando..." : "Exportar"}</span>
                     </button>

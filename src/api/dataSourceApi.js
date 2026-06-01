@@ -58,48 +58,111 @@ export async function getDataSource(token, data_source_id) {
   return parseResponse(response, "Erro ao abrir fonte de dados.");
 }
 
-export async function updateDataSource({ token, data_source_id, file }) {
+export async function getLinkedDashboards(
+  token,
+  data_source_id
+) {
+  const response = await fetch(
+    `${ACCOUNTS_URL}/data-source/linked-dashboards`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        token,
+        data_source_id: Number(data_source_id),
+      }),
+    }
+  );
+
+  return parseResponse(
+    response,
+    "Erro ao buscar dashboards vinculados."
+  );
+}
+
+export async function updateDataSource({
+  token,
+  data_source_id,
+  file,
+  refreshDashboards = false,
+}) {
   const formData = new FormData();
 
   formData.append("token", token);
-  formData.append("data_source_id", Number(data_source_id));
+  formData.append(
+    "data_source_id",
+    Number(data_source_id)
+  );
+
+  formData.append(
+    "refresh_dashboards",
+    refreshDashboards
+  );
+
   formData.append("file", file);
 
-  const response = await fetch(`${ACCOUNTS_URL}/data-source/update`, {
-    method: "PATCH",
-    body: formData,
-  });
+  const response = await fetch(
+    `${ACCOUNTS_URL}/data-source/update`,
+    {
+      method: "PATCH",
+      body: formData,
+    }
+  );
 
-  return parseResponse(response, "Erro ao atualizar fonte de dados.");
+  return parseResponse(
+    response,
+    "Erro ao atualizar fonte de dados."
+  );
 }
 
-export async function renameDataSource({ token, data_source_id, name }) {
-  const response = await fetch(`${ACCOUNTS_URL}/data-source/rename`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      token,
-      data_source_id: Number(data_source_id),
-      name,
-    }),
-  });
+export async function renameDataSource({
+  token,
+  data_source_id,
+  name,
+}) {
+  const response = await fetch(
+    `${ACCOUNTS_URL}/data-source/rename`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        token,
+        data_source_id: Number(data_source_id),
+        name,
+      }),
+    }
+  );
 
-  return parseResponse(response, "Erro ao renomear fonte de dados.");
+  return parseResponse(
+    response,
+    "Erro ao renomear fonte de dados."
+  );
 }
 
-export async function deleteDataSource(token, data_source_id) {
-  const response = await fetch(`${ACCOUNTS_URL}/data-source`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      token,
-      data_source_id: Number(data_source_id),
-    }),
-  });
+export async function deleteDataSource(
+  token,
+  data_source_id
+) {
+  const response = await fetch(
+    `${ACCOUNTS_URL}/data-source`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        token,
+        data_source_id: Number(data_source_id),
+      }),
+    }
+  );
 
-  return parseResponse(response, "Erro ao deletar fonte de dados.");
+  return parseResponse(
+    response,
+    "Erro ao deletar fonte de dados."
+  );
 }
