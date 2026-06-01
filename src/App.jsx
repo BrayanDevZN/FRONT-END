@@ -12,6 +12,7 @@ import SettingsRecoverPassword from "./pages/SettingsRecoverPassword";
 import Dashboards from "./pages/Dashboards";
 import Movimentacoes from "./pages/Movimentacoes";
 import Relatorios from "./pages/Relatorios";
+import Help from "./pages/Help";
 
 import PrivateRoute from "./routes/PrivateRoute";
 
@@ -59,6 +60,15 @@ function App() {
           element={
             <PrivateRoute>
               <Relatorios />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/help"
+          element={
+            <PrivateRoute>
+              <Help />
             </PrivateRoute>
           }
         />

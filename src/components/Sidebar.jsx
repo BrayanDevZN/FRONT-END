@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3,
   ChevronLeft,
+  CircleHelp,
   Home,
   LayoutDashboard,
   LogOut,
@@ -53,11 +54,13 @@ export default function Sidebar() {
   const [showDeleteChatModal, setShowDeleteChatModal] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState(null);
 
-  const [showDeleteDashboardModal, setShowDeleteDashboardModal] = useState(false);
+  const [showDeleteDashboardModal, setShowDeleteDashboardModal] =
+    useState(false);
   const [dashboardToDelete, setDashboardToDelete] = useState(null);
 
   const activeArea = useMemo(() => {
     if (location.pathname.startsWith("/chat")) return "ia";
+    if (location.pathname.startsWith("/help")) return "help";
     if (location.pathname.startsWith("/settings")) return "settings";
     return "inicio";
   }, [location.pathname]);
@@ -84,7 +87,9 @@ export default function Sidebar() {
       }
 
       const response = await getConversations(token);
-      const data = Array.isArray(response) ? response : response?.conversations || [];
+      const data = Array.isArray(response)
+        ? response
+        : response?.conversations || [];
 
       setConversations(data);
     } catch (err) {
@@ -267,7 +272,8 @@ export default function Sidebar() {
       setConversations((prev) =>
         prev.filter(
           (conversation) =>
-            Number(getConversationId(conversation)) !== Number(conversationToDelete)
+            Number(getConversationId(conversation)) !==
+            Number(conversationToDelete)
         )
       );
 
@@ -301,7 +307,9 @@ export default function Sidebar() {
       await deleteDashboard(token, dashboardToDelete);
 
       setDashboards((prev) =>
-        prev.filter((dashboard) => Number(dashboard.id) !== Number(dashboardToDelete))
+        prev.filter(
+          (dashboard) => Number(dashboard.id) !== Number(dashboardToDelete)
+        )
       );
 
       setDashboardToDelete(null);
@@ -330,49 +338,33 @@ export default function Sidebar() {
     loadConversations();
     loadDashboards();
   }, []);
+
   useEffect(() => {
-  loadConversations();
-  loadDashboards();
-}, []);
+    function handleOpenChatModal() {
+      setChatTitle("");
+      setModalError("");
+      setShowNewChatModal(true);
+    }
 
-useEffect(() => {
-  function handleOpenChatModal() {
-    setChatTitle("");
-    setModalError("");
-    setShowNewChatModal(true);
-  }
+    function handleOpenDashboardModal() {
+      setDashboardTitle("");
+      setDashboardPrompt("");
+      setDashboardFile(null);
+      setModalError("");
+      setShowNewDashboardModal(true);
+    }
 
-  function handleOpenDashboardModal() {
-    setDashboardTitle("");
-    setDashboardPrompt("");
-    setDashboardFile(null);
-    setModalError("");
-    setShowNewDashboardModal(true);
-  }
+    window.addEventListener("open-chat-modal", handleOpenChatModal);
+    window.addEventListener("open-dashboard-modal", handleOpenDashboardModal);
 
-  window.addEventListener(
-    "open-chat-modal",
-    handleOpenChatModal
-  );
-
-  window.addEventListener(
-    "open-dashboard-modal",
-    handleOpenDashboardModal
-  );
-
-  return () => {
-    window.removeEventListener(
-      "open-chat-modal",
-      handleOpenChatModal
-    );
-
-    window.removeEventListener(
-      "open-dashboard-modal",
-      handleOpenDashboardModal
-    );
-  };
-}, []);
-
+    return () => {
+      window.removeEventListener("open-chat-modal", handleOpenChatModal);
+      window.removeEventListener(
+        "open-dashboard-modal",
+        handleOpenDashboardModal
+      );
+    };
+  }, []);
 
   return (
     <>
@@ -396,7 +388,9 @@ useEffect(() => {
           <nav className="sidebar-main-nav" aria-label="Navegação principal">
             <button
               type="button"
-              className={`sidebar-nav-item ${activeArea === "inicio" ? "is-active" : ""}`}
+              className={`sidebar-nav-item ${
+                activeArea === "inicio" ? "is-active" : ""
+              }`}
               onClick={() => navigate("/dashboards")}
               title="Início"
             >
@@ -409,7 +403,11 @@ useEffect(() => {
             <div className="sidebar-section-title">
               <span>{collapsed ? "Dash" : "Dashboards"}</span>
               {!collapsed && (
-                <button type="button" onClick={openNewDashboardModal} disabled={loading}>
+                <button
+                  type="button"
+                  onClick={openNewDashboardModal}
+                  disabled={loading}
+                >
                   <Plus size={15} />
                 </button>
               )}
@@ -417,7 +415,9 @@ useEffect(() => {
 
             <div className="sidebar-list">
               {dashboards.length === 0 ? (
-                !collapsed && <p className="sidebar-empty">Nenhum dashboard ainda.</p>
+                !collapsed && (
+                  <p className="sidebar-empty">Nenhum dashboard ainda.</p>
+                )
               ) : (
                 dashboards.map((dashboard) => (
                   <div key={dashboard.id} className="sidebar-row">
@@ -437,7 +437,9 @@ useEffect(() => {
                         onClick={(event) => {
                           event.stopPropagation();
                           setOpenDashboardMenuId(
-                            openDashboardMenuId === dashboard.id ? null : dashboard.id
+                            openDashboardMenuId === dashboard.id
+                              ? null
+                              : dashboard.id
                           );
                         }}
                       >
@@ -449,7 +451,9 @@ useEffect(() => {
                       <div className="sidebar-popover-menu">
                         <button
                           type="button"
-                          onClick={(event) => handleDeleteDashboard(event, dashboard.id)}
+                          onClick={(event) =>
+                            handleDeleteDashboard(event, dashboard.id)
+                          }
                         >
                           <Trash2 size={14} />
                           Excluir
@@ -466,7 +470,11 @@ useEffect(() => {
             <div className="sidebar-section-title">
               <span>{collapsed ? "IA" : "Chats da IA"}</span>
               {!collapsed && (
-                <button type="button" onClick={openNewChatModal} disabled={loading}>
+                <button
+                  type="button"
+                  onClick={openNewChatModal}
+                  disabled={loading}
+                >
                   <Plus size={15} />
                 </button>
               )}
@@ -474,7 +482,9 @@ useEffect(() => {
 
             <div className="sidebar-list">
               {conversations.length === 0 ? (
-                !collapsed && <p className="sidebar-empty">Nenhuma conversa ainda.</p>
+                !collapsed && (
+                  <p className="sidebar-empty">Nenhuma conversa ainda.</p>
+                )
               ) : (
                 conversations.map((conversation) => {
                   const id = getConversationId(conversation);
@@ -497,7 +507,9 @@ useEffect(() => {
                           className="sidebar-menu-button"
                           onClick={(event) => {
                             event.stopPropagation();
-                            setOpenChatMenuId(openChatMenuId === id ? null : id);
+                            setOpenChatMenuId(
+                              openChatMenuId === id ? null : id
+                            );
                           }}
                         >
                           ⋯
@@ -506,7 +518,10 @@ useEffect(() => {
 
                       {openChatMenuId === id && (
                         <div className="sidebar-popover-menu">
-                          <button type="button" onClick={(event) => handleDeleteChat(event, id)}>
+                          <button
+                            type="button"
+                            onClick={(event) => handleDeleteChat(event, id)}
+                          >
                             <Trash2 size={14} />
                             Excluir
                           </button>
@@ -521,6 +536,18 @@ useEffect(() => {
         </div>
 
         <div className="sidebar-footer">
+          <button
+            type="button"
+            className={`sidebar-nav-item sidebar-footer-nav-item ${
+              activeArea === "help" ? "is-active" : ""
+            }`}
+            onClick={() => navigate("/help")}
+            title="Ajuda"
+          >
+            <CircleHelp size={20} />
+            {!collapsed && <span>Ajuda</span>}
+          </button>
+
           <button
             type="button"
             className={`sidebar-nav-item sidebar-footer-nav-item ${
@@ -593,7 +620,10 @@ useEffect(() => {
 
       {showNewDashboardModal && (
         <div className="modal-overlay">
-          <form className="modal-card modal-card-wide" onSubmit={handleCreateDashboard}>
+          <form
+            className="modal-card modal-card-wide"
+            onSubmit={handleCreateDashboard}
+          >
             <div className="modal-icon">
               <LayoutDashboard size={22} />
             </div>
@@ -629,7 +659,9 @@ useEffect(() => {
                   onChange={(event) => setDashboardFile(event.target.files[0])}
                 />
                 <UploadCloud size={18} />
-                <span>{dashboardFile ? dashboardFile.name : "Selecionar arquivo"}</span>
+                <span>
+                  {dashboardFile ? dashboardFile.name : "Selecionar arquivo"}
+                </span>
               </label>
             </label>
 
@@ -664,11 +696,19 @@ useEffect(() => {
             <p>Tem certeza que deseja excluir esta conversa?</p>
 
             <div className="modal-actions">
-              <button type="button" className="modal-cancel" onClick={cancelDeleteChat}>
+              <button
+                type="button"
+                className="modal-cancel"
+                onClick={cancelDeleteChat}
+              >
                 Cancelar
               </button>
 
-              <button type="button" className="delete-confirm-button" onClick={confirmDeleteChat}>
+              <button
+                type="button"
+                className="delete-confirm-button"
+                onClick={confirmDeleteChat}
+              >
                 Excluir
               </button>
             </div>
@@ -687,7 +727,11 @@ useEffect(() => {
             <p>Tem certeza que deseja excluir este dashboard?</p>
 
             <div className="modal-actions">
-              <button type="button" className="modal-cancel" onClick={cancelDeleteDashboard}>
+              <button
+                type="button"
+                className="modal-cancel"
+                onClick={cancelDeleteDashboard}
+              >
                 Cancelar
               </button>
 
