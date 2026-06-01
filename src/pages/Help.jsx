@@ -8,6 +8,12 @@ import {
   MessageCircle,
   Lightbulb,
   AlertTriangle,
+  Database,
+  RefreshCcw,
+  Link,
+  FileSpreadsheet,
+  Bot,
+  CheckCircle2,
 } from "lucide-react";
 
 import AppLayout from "../components/AppLayout";
@@ -24,8 +30,8 @@ export default function Help() {
           <div>
             <h1>Ajuda</h1>
             <p>
-              Entenda como usar o DataPilot AI para transformar arquivos de
-              dados em dashboards, gráficos e análises inteligentes.
+              Aprenda como usar o DataPilot AI para transformar planilhas em
+              fontes de dados, dashboards, gráficos, análises e conversas com IA.
             </p>
           </div>
         </section>
@@ -35,13 +41,65 @@ export default function Help() {
             <BarChart3 size={26} />
             <h2>O que é o DataPilot AI?</h2>
             <p>
-              O DataPilot AI é uma plataforma criada para facilitar a análise de
-              dados. O usuário envia uma planilha, faz uma pergunta e o sistema
-              gera uma análise com gráfico, resumo e recomendações.
+              O DataPilot AI é uma plataforma de análise de dados. Você cadastra
+              uma fonte de dados, cria dashboards a partir dela e a IA gera
+              gráficos, interpretações e recomendações.
             </p>
             <p>
-              A ideia é permitir que pessoas sem conhecimento técnico consigam
-              entender informações importantes de forma visual e simples.
+              A ideia é ajudar pessoas que não dominam BI, Excel avançado ou
+              programação a entenderem melhor seus dados de forma visual.
+            </p>
+          </article>
+
+          <article className="help-card">
+            <Database size={26} />
+            <h2>O que são fontes de dados?</h2>
+            <p>
+              Fontes de dados são os arquivos que alimentam seus dashboards.
+              Elas podem ser planilhas CSV, XLSX, XLS ou arquivos JSON.
+            </p>
+            <p>
+              Em vez de enviar o mesmo arquivo toda vez, você salva uma fonte
+              uma única vez e pode reutilizá-la em vários dashboards diferentes.
+            </p>
+          </article>
+
+          <article className="help-card">
+            <FileSpreadsheet size={26} />
+            <h2>Como adicionar uma fonte</h2>
+            <ol>
+              <li>Clique em <strong>Fontes de Dados</strong>.</li>
+              <li>Clique em <strong>Adicionar fonte</strong>.</li>
+              <li>Dê um nome para identificar a fonte.</li>
+              <li>Envie um arquivo CSV, XLSX, XLS ou JSON.</li>
+              <li>Confira a prévia dos dados antes de criar dashboards.</li>
+            </ol>
+          </article>
+
+          <article className="help-card">
+            <RefreshCcw size={26} />
+            <h2>Como atualizar uma fonte</h2>
+            <p>
+              Quando os dados mudarem, você pode atualizar a fonte enviando uma
+              nova planilha. Isso substitui os dados antigos pelos novos.
+            </p>
+            <p>
+              Se a fonte estiver ligada a dashboards, o sistema mostra quais
+              dashboards dependem dela e pergunta se você deseja atualizar todos.
+            </p>
+          </article>
+
+          <article className="help-card">
+            <Link size={26} />
+            <h2>Dashboards vinculados</h2>
+            <p>
+              Um dashboard pode estar ligado a uma fonte de dados. Isso permite
+              que ele seja recriado automaticamente quando a fonte for atualizada.
+            </p>
+            <p>
+              Ao escolher <strong>Atualizar tudo</strong>, o DataPilot usa o
+              mesmo prompt salvo no dashboard para gerar novos gráficos e uma
+              nova análise com os dados atualizados.
             </p>
           </article>
 
@@ -49,11 +107,11 @@ export default function Help() {
             <Upload size={26} />
             <h2>Como criar um dashboard</h2>
             <ol>
-              <li>Clique em <strong>Novo dashboard</strong> na barra lateral.</li>
-              <li>Digite um nome para identificar o dashboard.</li>
+              <li>Clique em <strong>Novo dashboard</strong>.</li>
+              <li>Digite um nome para o dashboard.</li>
+              <li>Escolha uma fonte de dados cadastrada.</li>
               <li>Escreva o que você quer analisar.</li>
-              <li>Anexe um arquivo CSV, XLSX ou JSON.</li>
-              <li>Clique em gerar e aguarde a análise.</li>
+              <li>Clique em gerar e aguarde a análise da IA.</li>
             </ol>
           </article>
 
@@ -61,14 +119,15 @@ export default function Help() {
             <Lightbulb size={26} />
             <h2>Como escrever um bom pedido</h2>
             <p>
-              Quanto mais claro for o pedido, melhor será a análise. Em vez de
-              escrever apenas “analise isso”, tente explicar o objetivo.
+              Quanto mais específico for o pedido, melhor será o resultado. Evite
+              escrever apenas “analise isso”. Explique o objetivo da análise.
             </p>
+
             <div className="help-example">
-              <strong>Exemplo:</strong>
+              <strong>Exemplo bom:</strong>
               <span>
-                Analise as campanhas com maior ROI, compare os canais de
-                marketing e mostre quais regiões geraram mais receita.
+                Analise quais canais geraram mais receita, compare o ROI das
+                campanhas e mostre os produtos com melhor desempenho.
               </span>
             </div>
           </article>
@@ -77,13 +136,13 @@ export default function Help() {
             <BarChart3 size={26} />
             <h2>Como interpretar os gráficos</h2>
             <p>
-              Os gráficos ajudam a visualizar padrões nos dados. Gráficos de
-              barras são usados para comparação, linhas para evolução no tempo,
-              pizza para proporções e dispersão para relação entre variáveis.
+              Barras servem para comparar categorias. Linhas mostram evolução no
+              tempo. Pizza mostra proporções. Dispersão ajuda a observar relação
+              entre duas variáveis numéricas.
             </p>
             <p>
-              Abaixo do gráfico, a IA apresenta uma análise textual explicando
-              os principais pontos encontrados.
+              Abaixo dos gráficos, a IA apresenta uma análise textual explicando
+              os principais padrões encontrados.
             </p>
           </article>
 
@@ -91,9 +150,9 @@ export default function Help() {
             <Palette size={26} />
             <h2>Personalização visual</h2>
             <p>
-              Você pode alterar a cor do gráfico, fundo, textos dos eixos,
-              traços e estilo das barras. Isso ajuda a deixar o dashboard mais
-              claro e adaptado ao tipo de apresentação.
+              Você pode alterar cor do gráfico, fundo, textos dos eixos, traços
+              e estilo das barras. Isso ajuda a deixar o dashboard mais claro
+              para apresentações, relatórios ou trabalhos.
             </p>
           </article>
 
@@ -101,9 +160,22 @@ export default function Help() {
             <Save size={26} />
             <h2>Salvar configurações</h2>
             <p>
-              Depois de personalizar o gráfico, clique em <strong>Salvar</strong>.
+              Depois de personalizar um gráfico, clique em <strong>Salvar</strong>.
               Assim, quando você abrir o dashboard novamente, as cores e estilos
               escolhidos serão carregados automaticamente.
+            </p>
+          </article>
+
+          <article className="help-card">
+            <RefreshCcw size={26} />
+            <h2>Atualizar dashboard</h2>
+            <p>
+              O botão <strong>Atualizar</strong> refaz a análise do dashboard
+              usando a mesma fonte de dados e o mesmo prompt salvo.
+            </p>
+            <p>
+              Use isso quando quiser gerar gráficos e insights novamente sem
+              criar outro dashboard do zero.
             </p>
           </article>
 
@@ -111,9 +183,9 @@ export default function Help() {
             <FileDown size={26} />
             <h2>Exportar PDF</h2>
             <p>
-              O botão de exportação permite baixar o dashboard em PDF, incluindo
-              o gráfico e a análise da IA. Isso é útil para trabalhos,
-              apresentações e relatórios.
+              O botão de exportação baixa o dashboard em PDF, incluindo gráficos
+              e análise da IA. Isso é útil para trabalhos, apresentações e
+              relatórios.
             </p>
           </article>
 
@@ -121,10 +193,39 @@ export default function Help() {
             <MessageCircle size={26} />
             <h2>Como usar os chats</h2>
             <p>
-              A área de chat serve para conversas e perguntas gerais. Ela pode
-              ser usada para tirar dúvidas, pedir explicações ou discutir ideias
-              relacionadas aos dados.
+              A área de chat serve para conversas gerais com a IA. Você pode
+              pedir explicações, tirar dúvidas, discutir ideias ou entender
+              conceitos relacionados aos dados.
             </p>
+            <p>
+              O chat não substitui o dashboard. Ele é melhor para perguntas e
+              explicações. O dashboard é melhor para análise visual de dados.
+            </p>
+          </article>
+
+          <article className="help-card">
+            <Bot size={26} />
+            <h2>O que a IA faz?</h2>
+            <p>
+              A IA interpreta o pedido do usuário, escolhe métricas, sugere
+              gráficos e gera uma análise textual com base nos dados disponíveis.
+            </p>
+            <p>
+              Ela não deve inventar dados. Se uma coluna não existir ou estiver
+              mal preenchida, a análise pode ficar limitada.
+            </p>
+          </article>
+
+          <article className="help-card">
+            <CheckCircle2 size={26} />
+            <h2>Boas práticas</h2>
+            <ul>
+              <li>Use nomes de colunas claros, como Receita, Produto e Data.</li>
+              <li>Evite planilhas com células mescladas.</li>
+              <li>Remova linhas totalmente vazias.</li>
+              <li>Prefira datas em formato consistente.</li>
+              <li>Revise os gráficos antes de tomar decisões.</li>
+            </ul>
           </article>
 
           <article className="help-card help-warning">
@@ -137,7 +238,8 @@ export default function Help() {
             </p>
             <p>
               Sempre revise os resultados antes de usar em decisões importantes.
-              IA ajuda bastante, mas ainda não é mágica, infelizmente.
+              IA ajuda bastante, mas ainda não é mágica, infelizmente. Se fosse,
+              planilha bagunçada já teria sido extinta.
             </p>
           </article>
         </section>
