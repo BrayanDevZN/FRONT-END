@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import toast from "react-hot-toast";
-import { Save, FileDown, RefreshCcw } from "lucide-react";
+import { AlertTriangle, FileDown, PencilLine, RefreshCcw, Save, Sparkles } from "lucide-react";
 
 import {
   Area,
@@ -82,6 +82,9 @@ export default function Dashboards() {
 
   const [showDeleteDashboardModal, setShowDeleteDashboardModal] = useState(false);
   const [dashboardToDelete, setDashboardToDelete] = useState(null);
+  const [showPromptModal, setShowPromptModal] = useState(false);
+  const [showPromptConfirmation, setShowPromptConfirmation] = useState(false);
+  const [dashboardPrompt, setDashboardPrompt] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [loadingList, setLoadingList] = useState(false);
@@ -347,7 +350,7 @@ export default function Dashboards() {
     }
   }
 
-  async function handleRefreshDashboard() {
+  async function refreshSelectedDashboard(promptOverride) {
     if (!selectedDashboard?.id) {
       setError("Nenhum dashboard selecionado.");
       toast.error("Nenhum dashboard selecionado.");
@@ -369,6 +372,7 @@ export default function Dashboards() {
       const response = await refreshDashboard({
         token,
         dashboard: selectedDashboard,
+        prompt: promptOverride,
       });
 
       const refreshedDashboard =
@@ -418,6 +422,54 @@ export default function Dashboards() {
     } finally {
       setRefreshingDashboard(false);
     }
+  }
+
+  function handleRefreshDashboard() {
+    refreshSelectedDashboard();
+  }
+
+  function openPromptModal() {
+    if (!selectedDashboard?.data_source_id) {
+      setError("Este dashboard não está ligado a uma fonte de dados.");
+      toast.error("Este dashboard não está ligado a uma fonte de dados.");
+      return;
+    }
+
+    setDashboardPrompt(selectedDashboard.prompt || "");
+    setShowPromptConfirmation(false);
+    setShowPromptModal(true);
+  }
+
+  function closePromptModal() {
+    if (refreshingDashboard) return;
+
+    setShowPromptModal(false);
+    setShowPromptConfirmation(false);
+    setDashboardPrompt("");
+  }
+
+  function requestPromptUpdate(event) {
+    event.preventDefault();
+
+    if (!dashboardPrompt.trim()) {
+      setError("Digite um prompt para refazer a análise.");
+      toast.error("Digite um prompt para refazer a análise.");
+      return;
+    }
+
+    setError("");
+    setShowPromptModal(false);
+    setShowPromptConfirmation(true);
+  }
+
+  async function confirmPromptUpdate() {
+    const nextPrompt = dashboardPrompt.trim();
+
+    setShowPromptConfirmation(false);
+
+    await refreshSelectedDashboard(nextPrompt);
+
+    setDashboardPrompt("");
   }
 
   async function handleGenerate(event) {
@@ -1372,6 +1424,21 @@ export default function Dashboards() {
 
                     <button
                       type="button"
+                      className="dashboard-action-button prompt-chart-button"
+                      onClick={openPromptModal}
+                      disabled={refreshingDashboard || savingSettings || exportingPdf || !selectedDashboard?.data_source_id}
+                      title={
+                        selectedDashboard?.data_source_id
+                          ? "Alterar o prompt e refazer toda a análise"
+                          : "Este dashboard não está ligado a uma fonte de dados"
+                      }
+                    >
+                      <PencilLine size={18} />
+                      <span>Atualizar prompt</span>
+                    </button>
+
+                    <button
+                      type="button"
                       className="dashboard-action-button refresh-chart-button"
                       onClick={handleRefreshDashboard}
                       disabled={refreshingDashboard || savingSettings || exportingPdf || !selectedDashboard?.data_source_id}
@@ -1463,6 +1530,99 @@ export default function Dashboards() {
                   </button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {showPromptModal && (
+            <div className="modal-overlay">
+              <form className="prompt-update-modal" onSubmit={requestPromptUpdate}>
+                <div className="prompt-update-modal-header">
+                  <div className="prompt-update-icon">
+                    <Sparkles size={22} />
+                  </div>
+
+                  <div>
+                    <span className="prompt-update-kicker">Nova direção para a IA</span>
+                    <h2>Atualizar prompt</h2>
+                  </div>
+                </div>
+
+                <p>
+                  Descreva o que você deseja analisar. A IA usará este novo
+                  prompt para reconstruir o dashboard.
+                </p>
+
+                <label className="prompt-update-field">
+                  Novo prompt
+                  <textarea
+                    value={dashboardPrompt}
+                    onChange={(event) => setDashboardPrompt(event.target.value)}
+                    placeholder="Ex: Compare o desempenho mensal por categoria e destaque os produtos com maior crescimento."
+                    autoFocus
+                  />
+                  <small>{dashboardPrompt.trim().length} caracteres</small>
+                </label>
+
+                <div className="prompt-update-actions">
+                  <button type="button" className="modal-cancel" onClick={closePromptModal}>
+                    Cancelar
+                  </button>
+
+                  <button type="submit" className="prompt-update-primary">
+                    Continuar
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {showPromptConfirmation && (
+            <div className="modal-overlay">
+              <div className="prompt-confirmation-modal">
+                <div className="prompt-warning-icon">
+                  <AlertTriangle size={24} />
+                </div>
+
+                <div>
+                  <span className="prompt-update-kicker">Confirme a atualização</span>
+                  <h2>Refazer toda a análise?</h2>
+                </div>
+
+                <p>
+                  O prompt atual será substituído. Todos os gráficos e a análise
+                  textual deste dashboard serão gerados novamente com base no
+                  novo pedido.
+                </p>
+
+                <div className="prompt-preview">
+                  <span>Novo prompt</span>
+                  <strong>{dashboardPrompt.trim()}</strong>
+                </div>
+
+                <div className="prompt-update-actions">
+                  <button
+                    type="button"
+                    className="modal-cancel"
+                    onClick={() => {
+                      setShowPromptConfirmation(false);
+                      setShowPromptModal(true);
+                    }}
+                    disabled={refreshingDashboard}
+                  >
+                    Voltar
+                  </button>
+
+                  <button
+                    type="button"
+                    className="prompt-confirm-button"
+                    onClick={confirmPromptUpdate}
+                    disabled={refreshingDashboard}
+                  >
+                    <RefreshCcw size={17} />
+                    {refreshingDashboard ? "Atualizando..." : "Sim, refazer dashboard"}
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 

@@ -116,6 +116,7 @@ export async function generateDashboard({
 export async function refreshDashboard({
   token,
   dashboard,
+  prompt,
 }) {
   if (!dashboard?.id) {
     throw new Error("Dashboard inválido.");
@@ -129,13 +130,14 @@ export async function refreshDashboard({
 
   formData.append("token", token);
   formData.append("title", dashboard.title || "Dashboard");
-  formData.append("prompt", dashboard.prompt || "");
+  const refreshPrompt = prompt ?? dashboard.prompt ?? "";
+
+  formData.append("prompt", refreshPrompt);
   formData.append("data_source_id", String(dashboard.data_source_id));
-  formData.append("dashboard_id", String(dashboard.id));
 
   const analyzedData = normalizeChartsPayload(
     await safeFetch(
-      `${AI_URL}/dashboard/analyze`,
+      `${AI_URL}/dashboard/refresh/analyze`,
       {
         method: "POST",
         body: formData,
@@ -154,6 +156,7 @@ export async function refreshDashboard({
       body: JSON.stringify({
         token,
         dashboard_id: Number(dashboard.id),
+        prompt: refreshPrompt,
         ai_suggestion:
           analyzedData.ai_suggestion ||
           analyzedData.dashboard?.ai_suggestion ||
