@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   BarChart3,
+  Bell,
   ChevronLeft,
   CircleHelp,
   Database,
@@ -30,6 +31,7 @@ import {
 
 import { getDataSources } from "../api/dataSourceApi";
 import { getToken, removeToken } from "../utils/storage";
+import { getNotifications, markNotificationRead } from "../api/collaborationApi";
 
 export default function SidebarWithDataSources() {
   const navigate = useNavigate();
@@ -41,6 +43,8 @@ export default function SidebarWithDataSources() {
   const [sharedDashboards, setSharedDashboards] = useState([]);
   const [dashboardSources, setDashboardSources] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [chatTitle, setChatTitle] = useState("");
@@ -170,6 +174,22 @@ export default function SidebarWithDataSources() {
       setDashboardSources([]);
       setSelectedDataSourceId("");
     }
+  }
+
+  async function loadNotifications() {
+    try {
+      const response = await getNotifications(getToken());
+      setNotifications(response?.notifications || []);
+    } catch (err) {
+      console.error("Erro ao carregar notificações:", err);
+    }
+  }
+
+  async function openNotifications() {
+    setShowNotifications(true);
+    const unread = notifications.filter((item) => !item.is_read);
+    await Promise.all(unread.map((item) => markNotificationRead(getToken(), item.id)));
+    setNotifications((current) => current.map((item) => ({ ...item, is_read: true })));
   }
 
   function openNewChatModal() {
@@ -474,6 +494,12 @@ export default function SidebarWithDataSources() {
   useEffect(() => {
     loadConversations();
     loadDashboards();
+    loadNotifications();
+    const interval = setInterval(() => {
+      loadDashboards();
+      loadNotifications();
+    }, 15000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -487,8 +513,14 @@ export default function SidebarWithDataSources() {
       openNewDashboardModal();
     }
 
+    function handleCollaborationsUpdated() {
+      loadDashboards();
+      loadNotifications();
+    }
+
     window.addEventListener("open-chat-modal", handleOpenChatModal);
     window.addEventListener("open-dashboard-modal", handleOpenDashboardModal);
+    window.addEventListener("collaborations-updated", handleCollaborationsUpdated);
 
     return () => {
       window.removeEventListener("open-chat-modal", handleOpenChatModal);
@@ -496,6 +528,7 @@ export default function SidebarWithDataSources() {
         "open-dashboard-modal",
         handleOpenDashboardModal
       );
+      window.removeEventListener("collaborations-updated", handleCollaborationsUpdated);
     };
   }, []);
 
@@ -532,6 +565,12 @@ export default function SidebarWithDataSources() {
                 <img src="/datapilot-logo-light.svg" alt="DataPilot AI" />
               )}
             </button>
+            {!collapsed && (
+              <button type="button" className="sidebar-notification-button" onClick={openNotifications} title="Notificações">
+                <Bell size={19} />
+                {notifications.some((item) => !item.is_read) && <span>{notifications.filter((item) => !item.is_read).length}</span>}
+              </button>
+            )}
           </div>
 
           <nav className="sidebar-main-nav" aria-label="Navegação principal">
@@ -641,9 +680,9 @@ export default function SidebarWithDataSources() {
             </div>
           </div>
 
-          <div className="sidebar-section">
+          <div className="sidebar-section sidebar-shared-section">
             <div className="sidebar-section-title">
-              <span>{collapsed ? "Comp." : "Dashboards compartilhados"}</span>
+              <span>{collapsed ? "Comp." : "Compartilhados"}</span>
             </div>
 
             <div className="sidebar-list">
@@ -666,7 +705,7 @@ export default function SidebarWithDataSources() {
             </div>
           </div>
 
-          <div className="sidebar-section">
+          <div className="sidebar-section sidebar-chat-section">
             <div className="sidebar-section-title">
               <span>{collapsed ? "IA" : "Chats da IA"}</span>
               {!collapsed && (
@@ -782,6 +821,21 @@ export default function SidebarWithDataSources() {
           </button>
         </div>
       </aside>
+
+      {showNotifications && (
+        <div className="modal-overlay" onClick={() => setShowNotifications(false)}>
+          <div className="modal-card notification-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="modal-icon"><Bell size={22} /></div>
+            <h2>Notificações</h2>
+            {notifications.length === 0 ? <p>Nenhuma notificação ainda.</p> : (
+              <div className="notification-list">
+                {notifications.map((item) => <div key={item.id} className="notification-item"><Bell size={16} /><span>{item.message}</span></div>)}
+              </div>
+            )}
+            <button type="button" className="modal-confirm" onClick={() => setShowNotifications(false)}>Fechar</button>
+          </div>
+        </div>
+      )}
 
       {showNewChatModal && (
         <div className="modal-overlay">

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import toast from "react-hot-toast";
-import { AlertTriangle, FileDown, PencilLine, RefreshCcw, Save, Sparkles } from "lucide-react";
+import { AlertTriangle, FileDown, PencilLine, RefreshCcw, Save, Share2, Sparkles, Trash2, UsersRound } from "lucide-react";
 
 import {
   Area,
@@ -41,6 +41,7 @@ import {
 } from "../api/dashboardApi";
 
 import { getToken } from "../utils/storage";
+import { deleteCollaboration, getDashboardAccess } from "../api/collaborationApi";
 
 const DEFAULT_PIE_COLORS = [
   "#4f46e5",
@@ -70,6 +71,7 @@ const DEFAULT_CHART_SETTINGS = {
 };
 
 export default function Dashboards() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
   const [dashboards, setDashboards] = useState([]);
@@ -95,11 +97,33 @@ export default function Dashboards() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [refreshingDashboard, setRefreshingDashboard] = useState(false);
   const [error, setError] = useState("");
+  const [showAccessModal, setShowAccessModal] = useState(false);
+  const [dashboardAccess, setDashboardAccess] = useState([]);
 
   const charts = selectedDashboard?.charts || [];
   const accessPermission = selectedDashboard?.access_permission || "owner";
   const canEditDashboard = accessPermission !== "read";
   const canRefreshDashboard = accessPermission === "owner" || accessPermission === "full";
+
+  async function openAccessModal() {
+    try {
+      const response = await getDashboardAccess(getToken(), selectedDashboard.id);
+      setDashboardAccess(response?.collaborators || []);
+      setShowAccessModal(true);
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
+  async function leaveSharedDashboard() {
+    try {
+      await deleteCollaboration(getToken(), selectedDashboard.collaboration_id);
+      toast.success("Compartilhamento removido.");
+      navigate("/home");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
 
   async function loadDashboards() {
     setLoadingList(true);
@@ -1441,6 +1465,25 @@ export default function Dashboards() {
                   </div>
 
                   <div className="dashboard-actions">
+                    {accessPermission === "owner" && (
+                      <button type="button" className="dashboard-action-button" onClick={() => navigate(`/collaborations?dashboard_id=${selectedDashboard.id}`)}>
+                        <Share2 size={18} />
+                        <span>Compartilhar</span>
+                      </button>
+                    )}
+
+                    <button type="button" className="dashboard-action-button" onClick={openAccessModal}>
+                      <UsersRound size={18} />
+                      <span>Acessos</span>
+                    </button>
+
+                    {selectedDashboard.is_shared && (
+                      <button type="button" className="dashboard-action-button" onClick={leaveSharedDashboard}>
+                        <Trash2 size={18} />
+                        <span>Remover acesso</span>
+                      </button>
+                    )}
+
                     <button
                       type="button"
                       className="dashboard-action-button save-chart-button"
@@ -1670,6 +1713,26 @@ export default function Dashboards() {
                     {loadingDelete ? "Excluindo..." : "Excluir"}
                   </button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {showAccessModal && (
+            <div className="modal-overlay" onClick={() => setShowAccessModal(false)}>
+              <div className="modal-card notification-modal" onClick={(event) => event.stopPropagation()}>
+                <div className="modal-icon"><UsersRound size={22} /></div>
+                <h2>Pessoas com acesso</h2>
+                {dashboardAccess.length === 0 ? <p>Nenhum colaborador aceitou o convite ainda.</p> : (
+                  <div className="notification-list">
+                    {dashboardAccess.map((person) => (
+                      <div className="collaborator-row" key={`${person.permission}-${person.user_id}`}>
+                        <ProfileAvatar image={person.profile_image} name={person.name} />
+                        <span><strong>@{person.username}</strong><small>{person.permission}</small></span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button type="button" className="modal-confirm" onClick={() => setShowAccessModal(false)}>Fechar</button>
               </div>
             </div>
           )}

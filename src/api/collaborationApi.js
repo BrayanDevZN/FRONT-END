@@ -46,3 +46,26 @@ export function deleteCollaboration(token, collaboration_id) {
     body: { token, collaboration_id: Number(collaboration_id) },
   });
 }
+
+export function respondInvitation(token, collaboration_id, response) {
+  return request("/dashboard/collaboration/respond", {
+    body: { token, collaboration_id: Number(collaboration_id), response },
+  });
+}
+
+export function getDashboardAccess(token, dashboard_id) {
+  return request("/dashboard/access", {
+    body: { token, dashboard_id: Number(dashboard_id) },
+  });
+}
+
+export function getNotifications(token) {
+  return request("/notifications", { body: { token } });
+}
+
+export function markNotificationRead(token, notification_id) {
+  return request("/notification/read", {
+    method: "PATCH",
+    body: { token, notification_id: Number(notification_id) },
+  });
+}

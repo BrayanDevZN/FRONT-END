@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { Search, Share2, Trash2, UsersRound } from "lucide-react";
+import { Check, Search, Share2, Trash2, UsersRound, X } from "lucide-react";
 
 import AppLayout from "../components/AppLayout";
 import Loading from "../components/Loading";
@@ -12,6 +12,7 @@ import {
   searchUsers,
   shareDashboard,
   updateCollaboration,
+  respondInvitation,
 } from "../api/collaborationApi";
 import { getToken } from "../utils/storage";
 
@@ -24,6 +25,7 @@ const PERMISSIONS = [
 export default function Collaborations() {
   const [dashboards, setDashboards] = useState([]);
   const [sharedDashboards, setSharedDashboards] = useState([]);
+  const [invitations, setInvitations] = useState([]);
   const [selectedDashboardId, setSelectedDashboardId] = useState("");
   const [collaborators, setCollaborators] = useState([]);
   const [query, setQuery] = useState("");
@@ -33,12 +35,18 @@ export default function Collaborations() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  function notifyCollaborationChange() {
+    window.dispatchEvent(new Event("collaborations-updated"));
+  }
+
   async function loadOverview() {
     const response = await getCollaborationOverview(getToken());
     const owned = response?.dashboards || [];
     setDashboards(owned);
     setSharedDashboards(response?.shared_dashboards || []);
-    setSelectedDashboardId((current) => current || String(owned[0]?.id || ""));
+    setInvitations(response?.invitations || []);
+    const requestedDashboardId = new URLSearchParams(window.location.search).get("dashboard_id");
+    setSelectedDashboardId((current) => current || requestedDashboardId || String(owned[0]?.id || ""));
   }
 
   async function loadCollaborators(dashboardId) {
@@ -89,7 +97,8 @@ export default function Collaborations() {
       setQuery("");
       setUsers([]);
       setSelectedUser(null);
-      toast.success("Dashboard compartilhado com sucesso.");
+      notifyCollaborationChange();
+      toast.success("Convite enviado com sucesso.");
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -97,10 +106,22 @@ export default function Collaborations() {
     }
   }
 
+  async function handleInvitation(collaborationId, response) {
+    try {
+      await respondInvitation(getToken(), collaborationId, response);
+      await loadOverview();
+      notifyCollaborationChange();
+      toast.success(response === "accepted" ? "Convite aceito." : "Convite recusado.");
+    } catch (err) {
+      toast.error(err.message);
+    }
+  }
+
   async function handlePermission(collaborationId, nextPermission) {
     try {
       await updateCollaboration({ token: getToken(), collaboration_id: collaborationId, permission: nextPermission });
       await loadCollaborators(selectedDashboardId);
+      notifyCollaborationChange();
       toast.success("Permissão atualizada.");
     } catch (err) {
       toast.error(err.message);
@@ -111,6 +132,8 @@ export default function Collaborations() {
     try {
       await deleteCollaboration(getToken(), collaborationId);
       await loadCollaborators(selectedDashboardId);
+      await loadOverview();
+      notifyCollaborationChange();
       toast.success("Acesso removido.");
     } catch (err) {
       toast.error(err.message);
@@ -132,7 +155,7 @@ export default function Collaborations() {
         {loading ? <Loading label="Carregando colaborações" /> : (
           <section className="collaborations-grid">
             <div className="collaboration-card">
-              <h2>Novo compartilhamento</h2>
+              <h2>Novo convite</h2>
               <form onSubmit={handleShare}>
                 <label>Dashboard
                   <select value={selectedDashboardId} onChange={(event) => setSelectedDashboardId(event.target.value)}>
@@ -154,7 +177,7 @@ export default function Collaborations() {
                   </button>)}
                 </div>
                 <button className="collaboration-primary" disabled={saving || !selectedUser || !selectedDashboardId}>
-                  <Share2 size={17} /> {saving ? "Compartilhando..." : "Compartilhar dashboard"}
+                  <Share2 size={17} /> {saving ? "Enviando..." : "Enviar convite"}
                 </button>
               </form>
             </div>
@@ -164,7 +187,7 @@ export default function Collaborations() {
               {collaborators.length === 0 ? <p className="collaboration-empty">Esse dashboard ainda não foi compartilhado.</p> : collaborators.map((person) => (
                 <div className="collaborator-row" key={person.id}>
                   <ProfileAvatar image={person.profile_image} name={person.name} />
-                  <span><strong>@{person.username}</strong><small>{person.name}</small></span>
+                  <span><strong>@{person.username}</strong><small>{person.name} · {person.status === "pending" ? "Convite pendente" : person.status === "declined" ? "Convite recusado" : "Acesso ativo"}</small></span>
                   <select value={person.permission} onChange={(event) => handlePermission(person.id, event.target.value)}>
                     {PERMISSIONS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                   </select>
@@ -176,12 +199,25 @@ export default function Collaborations() {
         )}
 
         <section className="collaboration-card shared-overview">
+          <h2>Convites recebidos</h2>
+          {invitations.length === 0 ? <p className="collaboration-empty">Nenhum convite pendente.</p> : invitations.map((invitation) => (
+            <div className="collaborator-row" key={invitation.id}>
+              <ProfileAvatar image={invitation.creator_profile_image} name={invitation.creator_name} />
+              <span><strong>{invitation.title}</strong><small>Convite de @{invitation.creator_username}</small></span>
+              <button type="button" className="invitation-accept" onClick={() => handleInvitation(invitation.id, "accepted")} title="Aceitar"><Check size={17} /></button>
+              <button type="button" onClick={() => handleInvitation(invitation.id, "declined")} title="Recusar"><X size={17} /></button>
+            </div>
+          ))}
+        </section>
+
+        <section className="collaboration-card shared-overview">
           <h2>Compartilhados comigo</h2>
           {sharedDashboards.length === 0 ? <p className="collaboration-empty">Nenhum dashboard compartilhado com você ainda.</p> : sharedDashboards.map((dashboard) => (
             <div className="collaborator-row" key={dashboard.id}>
               <ProfileAvatar image={dashboard.creator_profile_image} name={dashboard.creator_name} />
               <span><strong>{dashboard.title}</strong><small>Criado por @{dashboard.creator_username}</small></span>
               <em>{PERMISSIONS.find((item) => item.value === dashboard.access_permission)?.label}</em>
+              <button type="button" onClick={() => handleRemove(dashboard.collaboration_id || dashboard.id)} title="Remover compartilhamento"><Trash2 size={17} /></button>
             </div>
           ))}
         </section>

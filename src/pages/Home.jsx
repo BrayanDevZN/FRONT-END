@@ -42,6 +42,7 @@ export default function Home() {
 
   const [user, setUser] = useState(null);
   const [dashboards, setDashboards] = useState([]);
+  const [sharedDashboards, setSharedDashboards] = useState([]);
   const [dataSources, setDataSources] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -70,6 +71,7 @@ export default function Home() {
 
       setUser(meResponse);
       setDashboards(dashboardsResponse?.dashboards || []);
+      setSharedDashboards(dashboardsResponse?.shared_dashboards || []);
       setDataSources(dataSourcesResponse?.data_sources || []);
       setConversations(chats);
     } finally {
@@ -90,6 +92,7 @@ export default function Home() {
   );
 
   const recentDashboards = dashboards.slice(0, 4);
+  const recentSharedDashboards = sharedDashboards.slice(0, 4);
   const recentSources = dataSources.slice(0, 4);
   const recentChats = conversations.slice(0, 4);
 
@@ -376,6 +379,32 @@ export default function Home() {
                     </small>
                   </span>
 
+                  <ArrowRight size={18} />
+                </button>
+              ))
+            )}
+          </div>
+        </section>
+
+        <section className="home-panel">
+          <div className="home-panel-header">
+            <div>
+              <h2>Compartilhados comigo</h2>
+              <p>Dashboards enviados pela sua equipe.</p>
+            </div>
+          </div>
+
+          <div className="home-recent-list">
+            {recentSharedDashboards.length === 0 ? (
+              <p className="home-empty">Nenhum dashboard compartilhado com você ainda.</p>
+            ) : (
+              recentSharedDashboards.map((dashboard) => (
+                <button key={dashboard.id} onClick={() => navigate(`/dashboards?dashboard_id=${dashboard.id}`)}>
+                  <span className="home-recent-icon"><BarChart3 size={18} /></span>
+                  <span>
+                    <strong>{dashboard.title}</strong>
+                    <small>Criado por @{dashboard.creator_username}</small>
+                  </span>
                   <ArrowRight size={18} />
                 </button>
               ))

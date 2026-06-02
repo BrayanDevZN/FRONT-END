@@ -5301,8 +5301,84 @@ a:hover {
 }
 
 .sidebar-top {
+  display: flex;
+  flex-direction: column;
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.sidebar-chat-section {
+  order: 4;
+}
+
+.sidebar-shared-section {
+  order: 5;
+}
+
+.sidebar-notification-button {
+  position: relative;
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #bfdbfe;
+  cursor: pointer;
+}
+
+.sidebar-notification-button:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+.sidebar-notification-button span {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid #0a1e3d;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 950;
+}
+
+.notification-modal {
+  max-width: 560px;
+}
+
+.notification-list {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  margin: 14px 0;
+  overflow-y: auto;
+}
+
+.notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #dbeafe;
+  border-radius: 13px;
+  background: #eff6ff;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.invitation-accept {
+  background: #ecfdf5 !important;
+  color: #059669 !important;
 }
 
 .sidebar-row {
