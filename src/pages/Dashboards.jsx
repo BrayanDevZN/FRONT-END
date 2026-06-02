@@ -29,6 +29,7 @@ import {
 import AppLayout from "../components/AppLayout";
 import Button from "../components/Button";
 import Loading from "../components/Loading";
+import ProfileAvatar from "../components/ProfileAvatar";
 
 import {
   generateDashboard,
@@ -96,6 +97,9 @@ export default function Dashboards() {
   const [error, setError] = useState("");
 
   const charts = selectedDashboard?.charts || [];
+  const accessPermission = selectedDashboard?.access_permission || "owner";
+  const canEditDashboard = accessPermission !== "read";
+  const canRefreshDashboard = accessPermission === "owner" || accessPermission === "full";
 
   async function loadDashboards() {
     setLoadingList(true);
@@ -1274,6 +1278,10 @@ export default function Dashboards() {
     const isBarLike = chartType === "bar" || chartType === "horizontal_bar";
     const isCartesian = ["bar", "horizontal_bar", "line", "area", "scatter"].includes(chartType);
 
+    if (!canEditDashboard) {
+      return <div className="dashboard-chart-top"><h3>{currentChart.title || `Gráfico ${index + 1}`}</h3></div>;
+    }
+
     return (
       <>
         <div className="dashboard-chart-top">
@@ -1421,6 +1429,15 @@ export default function Dashboards() {
                 <div className="dashboard-view-header">
                   <div>
                     <h2 className="dashboard-title-hidden">{selectedDashboard.title}</h2>
+                    {selectedDashboard.is_shared && (
+                      <div className="dashboard-creator-badge">
+                        <ProfileAvatar
+                          image={selectedDashboard.creator_profile_image}
+                          name={selectedDashboard.creator_name}
+                        />
+                        <span>Criado por <strong>@{selectedDashboard.creator_username}</strong></span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="dashboard-actions">
@@ -1428,7 +1445,7 @@ export default function Dashboards() {
                       type="button"
                       className="dashboard-action-button save-chart-button"
                       onClick={handleSaveChartSettings}
-                      disabled={savingSettings || refreshingDashboard}
+                      disabled={savingSettings || refreshingDashboard || !canEditDashboard}
                     >
                       <Save size={18} />
                       <span>{savingSettings ? "Salvando..." : "Salvar"}</span>
@@ -1438,7 +1455,7 @@ export default function Dashboards() {
                       type="button"
                       className="dashboard-action-button prompt-chart-button"
                       onClick={openPromptModal}
-                      disabled={refreshingDashboard || savingSettings || exportingPdf || !selectedDashboard?.data_source_id}
+                      disabled={refreshingDashboard || savingSettings || exportingPdf || !selectedDashboard?.data_source_id || !canRefreshDashboard}
                       title={
                         selectedDashboard?.data_source_id
                           ? "Alterar o prompt e refazer toda a análise"
@@ -1453,7 +1470,7 @@ export default function Dashboards() {
                       type="button"
                       className="dashboard-action-button refresh-chart-button"
                       onClick={handleRefreshDashboard}
-                      disabled={refreshingDashboard || savingSettings || exportingPdf || !selectedDashboard?.data_source_id}
+                      disabled={refreshingDashboard || savingSettings || exportingPdf || !selectedDashboard?.data_source_id || !canRefreshDashboard}
                       title={
                         selectedDashboard?.data_source_id
                           ? "Atualizar dashboard usando a fonte de dados atual"

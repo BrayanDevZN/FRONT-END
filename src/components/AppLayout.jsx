@@ -18,6 +18,7 @@ const PAGE_TITLES = {
   chat: "IA Financeira",
   settings: "Configurações",
   dataSources: "Fontes de Dados",
+  collaborations: "Colaborações",
   movimentacoes: "Movimentações",
   relatorios: "Relatórios",
   help: "Ajuda",
@@ -45,6 +46,14 @@ function getPageInfo(pathname) {
       key: "dataSources",
       title: PAGE_TITLES.dataSources,
       subtitle: "Gerencie planilhas e fontes usadas nas análises.",
+    };
+  }
+
+  if (pathname.startsWith("/collaborations")) {
+    return {
+      key: "collaborations",
+      title: PAGE_TITLES.collaborations,
+      subtitle: "Compartilhe dashboards e controle o acesso da sua equipe.",
     };
   }
 

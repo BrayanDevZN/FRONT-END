@@ -5939,3 +5939,251 @@ button:not(:disabled):active {
     height: 68px;
   }
 }
+
+/* =========================
+   Collaborations
+========================= */
+
+.collaborations-page {
+  display: grid;
+  gap: 22px;
+  min-height: 100vh;
+  padding: 28px;
+}
+
+.collaborations-hero,
+.collaboration-card {
+  border: 1px solid #dbeafe;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: var(--soft-shadow);
+}
+
+.collaborations-hero {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 26px;
+  color: #2563eb;
+  background: linear-gradient(135deg, #fff, #eff6ff);
+}
+
+.collaborations-hero span,
+.collaboration-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.collaborations-hero span {
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.collaborations-hero h1 {
+  margin: 9px 0 6px;
+  color: var(--primary-900);
+  font-size: 32px;
+  letter-spacing: -.05em;
+}
+
+.collaborations-hero p,
+.collaboration-empty {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.collaborations-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.collaboration-card {
+  padding: 22px;
+}
+
+.collaboration-card h2 {
+  margin: 0 0 18px;
+  color: var(--primary-900);
+}
+
+.collaboration-card form,
+.collaboration-card label {
+  display: grid;
+  gap: 8px;
+}
+
+.collaboration-card form {
+  gap: 16px;
+}
+
+.collaboration-card label {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.collaboration-card select,
+.collaboration-search {
+  min-height: 44px;
+  border: 1px solid #dbe3ef;
+  border-radius: 13px;
+  background: #f8fafc;
+}
+
+.collaboration-card select {
+  padding: 0 11px;
+}
+
+.collaboration-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.collaboration-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.collaboration-results {
+  display: grid;
+  gap: 6px;
+  padding: 7px;
+  border: 1px solid #dbeafe;
+  border-radius: 15px;
+  background: #fff;
+}
+
+.collaboration-results button,
+.collaborator-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.collaboration-results button {
+  padding: 9px;
+  border-radius: 11px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.collaboration-results button:hover {
+  background: #eff6ff;
+}
+
+.collaboration-results span,
+.collaborator-row span {
+  flex: 1;
+  display: grid;
+  gap: 3px;
+}
+
+.collaboration-results small,
+.collaborator-row small {
+  color: var(--muted);
+}
+
+.permission-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.permission-grid button {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+  background: #f8fafc;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+}
+
+.permission-grid button.is-active {
+  border-color: #60a5fa;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.permission-grid small {
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.collaboration-primary {
+  justify-content: center;
+  min-height: 46px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #fff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.collaborator-row {
+  padding: 12px 0;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.collaborator-row:last-child {
+  border-bottom: 0;
+}
+
+.collaborator-row select {
+  min-height: 38px;
+}
+
+.collaborator-row > button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: #fef2f2;
+  color: #dc2626;
+  cursor: pointer;
+}
+
+.collaborator-row em {
+  color: #2563eb;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.dashboard-creator-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 11px 7px 7px;
+  border: 1px solid #dbeafe;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #475569;
+  font-size: 13px;
+}
+
+.dashboard-creator-badge .profile-avatar {
+  width: 30px;
+  height: 30px;
+  border-width: 2px;
+}
+
+@media (max-width: 900px) {
+  .collaborations-grid,
+  .permission-grid {
+    grid-template-columns: 1fr;
+  }
+}

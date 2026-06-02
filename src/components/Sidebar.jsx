@@ -13,6 +13,7 @@ import {
   Settings,
   Sparkles,
   Trash2,
+  UsersRound,
 } from "lucide-react";
 
 import {
@@ -37,6 +38,7 @@ export default function SidebarWithDataSources() {
   const [collapsed, setCollapsed] = useState(false);
   const [conversations, setConversations] = useState([]);
   const [dashboards, setDashboards] = useState([]);
+  const [sharedDashboards, setSharedDashboards] = useState([]);
   const [dashboardSources, setDashboardSources] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -70,6 +72,7 @@ export default function SidebarWithDataSources() {
     if (location.pathname.startsWith("/dashboards")) return "dashboards";
     if (location.pathname.startsWith("/chat")) return "ia";
     if (location.pathname.startsWith("/data-sources")) return "data-sources";
+    if (location.pathname.startsWith("/collaborations")) return "collaborations";
     if (location.pathname.startsWith("/help")) return "help";
     if (location.pathname.startsWith("/settings")) return "settings";
     return "inicio";
@@ -137,9 +140,11 @@ export default function SidebarWithDataSources() {
 
       const response = await getDashboards(token);
       setDashboards(response?.dashboards || []);
+      setSharedDashboards(response?.shared_dashboards || []);
     } catch (err) {
       console.error("Erro ao carregar dashboards:", err);
       setDashboards([]);
+      setSharedDashboards([]);
     }
   }
 
@@ -553,6 +558,18 @@ export default function SidebarWithDataSources() {
               <Database size={20} />
               {!collapsed && <span>Fontes de Dados</span>}
             </button>
+
+            <button
+              type="button"
+              className={`sidebar-nav-item ${
+                activeArea === "collaborations" ? "is-active" : ""
+              }`}
+              onClick={() => navigate("/collaborations")}
+              title="Colaborações"
+            >
+              <UsersRound size={20} />
+              {!collapsed && <span>Colaborações</span>}
+            </button>
           </nav>
 
           <div className="sidebar-section">
@@ -618,6 +635,31 @@ export default function SidebarWithDataSources() {
                         </button>
                       </div>
                     )}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="sidebar-section">
+            <div className="sidebar-section-title">
+              <span>{collapsed ? "Comp." : "Dashboards compartilhados"}</span>
+            </div>
+
+            <div className="sidebar-list">
+              {sharedDashboards.length === 0 ? (
+                !collapsed && <p className="sidebar-empty">Nenhum compartilhado.</p>
+              ) : (
+                sharedDashboards.map((dashboard) => (
+                  <div key={dashboard.id} className="sidebar-row">
+                    <button
+                      className="sidebar-row-main"
+                      onClick={() => goToDashboard(dashboard.id)}
+                      title={`${dashboard.title} · @${dashboard.creator_username}`}
+                    >
+                      <UsersRound size={16} />
+                      {!collapsed && <span>{dashboard.title}</span>}
+                    </button>
                   </div>
                 ))
               )}

@@ -17,6 +17,7 @@ import Movimentacoes from "./pages/Movimentacoes";
 import Relatorios from "./pages/Relatorios";
 import Help from "./pages/Help";
 import DataSources from "./pages/DataSources";
+import Collaborations from "./pages/Collaborations";
 
 import PrivateRoute from "./routes/PrivateRoute";
 
@@ -64,6 +65,15 @@ function App() {
           element={
             <PrivateRoute>
               <DataSources />
+            </PrivateRoute>
+          }
+        />
+
+        <Route
+          path="/collaborations"
+          element={
+            <PrivateRoute>
+              <Collaborations />
             </PrivateRoute>
           }
         />

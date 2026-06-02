@@ -481,10 +481,10 @@ export default function DataSources() {
                   >
                     <FileSpreadsheet size={18} />
 
-                    <span>
-                      <strong>{source.name}</strong>
-                      <small>{source.file_name}</small>
-                    </span>
+                      <span>
+                        <strong>{source.name}</strong>
+                        <small>{source.is_shared ? `Compartilhada por @${source.creator_username}` : source.file_name}</small>
+                      </span>
                   </button>
                 ))
               )}
@@ -509,14 +509,16 @@ export default function DataSources() {
                     <p>{selectedSource.file_name}</p>
                   </div>
 
-                  <button
-                    type="button"
-                    className="data-source-danger-button"
-                    onClick={() => setShowDeleteModal(true)}
-                  >
-                    <Trash2 size={18} />
-                    Excluir
-                  </button>
+                  {!selectedSource.is_shared && (
+                    <button
+                      type="button"
+                      className="data-source-danger-button"
+                      onClick={() => setShowDeleteModal(true)}
+                    >
+                      <Trash2 size={18} />
+                      Excluir
+                    </button>
+                  )}
                 </div>
 
                 <div className="data-source-stats">
