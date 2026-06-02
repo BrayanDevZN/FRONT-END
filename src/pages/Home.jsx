@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import AppLayout from "../components/AppLayout";
+import Loading from "../components/Loading";
 import { getDashboards } from "../api/dashboardApi";
 import { getDataSources } from "../api/dataSourceApi";
 import { getConversations, getMe } from "../api/accountsApi";
@@ -130,13 +131,23 @@ export default function Home() {
           </div>
         </section>
 
+        {loading && (
+          <Loading
+            compact
+            label="Atualizando sua central"
+            description="Sincronizando dashboards, fontes e conversas."
+          />
+        )}
+
         <section className="home-kpi-grid">
           <button className="home-kpi-card" onClick={() => navigate("/dashboards")}>
             <span className="home-kpi-icon blue">
               <BarChart3 size={24} />
             </span>
             <small>Dashboards</small>
-            <strong>{loading ? "..." : dashboards.length}</strong>
+            <strong className={loading ? "is-loading-value" : ""}>
+              {loading ? "" : dashboards.length}
+            </strong>
           </button>
 
           <button className="home-kpi-card" onClick={() => navigate("/data-sources")}>
@@ -144,7 +155,9 @@ export default function Home() {
               <Database size={24} />
             </span>
             <small>Fontes de dados</small>
-            <strong>{loading ? "..." : dataSources.length}</strong>
+            <strong className={loading ? "is-loading-value" : ""}>
+              {loading ? "" : dataSources.length}
+            </strong>
           </button>
 
           <button className="home-kpi-card" onClick={() => navigate("/chat")}>
@@ -152,7 +165,9 @@ export default function Home() {
               <MessageSquare size={24} />
             </span>
             <small>Conversas IA</small>
-            <strong>{loading ? "..." : conversations.length}</strong>
+            <strong className={loading ? "is-loading-value" : ""}>
+              {loading ? "" : conversations.length}
+            </strong>
           </button>
 
           <button className="home-kpi-card" onClick={() => navigate("/dashboards")}>
@@ -160,7 +175,9 @@ export default function Home() {
               <AlertTriangle size={24} />
             </span>
             <small>Atualizações pendentes</small>
-            <strong>{loading ? "..." : outdatedDashboards.length}</strong>
+            <strong className={loading ? "is-loading-value" : ""}>
+              {loading ? "" : outdatedDashboards.length}
+            </strong>
           </button>
         </section>
 

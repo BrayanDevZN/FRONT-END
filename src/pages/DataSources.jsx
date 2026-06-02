@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import AppLayout from "../components/AppLayout";
+import Loading from "../components/Loading";
 import { getToken } from "../utils/storage";
 
 import {
@@ -459,7 +460,11 @@ export default function DataSources() {
 
             <div className="data-sources-list">
               {loadingList ? (
-                <p className="data-source-empty">Carregando...</p>
+                <Loading
+                  compact
+                  label="Carregando fontes"
+                  description="Sincronizando seus arquivos."
+                />
               ) : dataSources.length === 0 ? (
                 <p className="data-source-empty">
                   Nenhuma fonte cadastrada ainda.

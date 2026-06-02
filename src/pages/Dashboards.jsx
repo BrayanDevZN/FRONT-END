@@ -28,6 +28,7 @@ import {
 
 import AppLayout from "../components/AppLayout";
 import Button from "../components/Button";
+import Loading from "../components/Loading";
 
 import {
   generateDashboard,
@@ -1395,7 +1396,10 @@ export default function Dashboards() {
                 <h2>Nenhum dashboard aberto</h2>
 
                 {loadingList ? (
-                  <p>Carregando dashboards...</p>
+                  <Loading
+                    label="Carregando dashboards"
+                    description="Buscando suas análises mais recentes."
+                  />
                 ) : dashboards.length === 0 ? (
                   <p>Crie seu primeiro dashboard para visualizar uma análise.</p>
                 ) : (
@@ -1406,6 +1410,14 @@ export default function Dashboards() {
               </div>
             ) : (
               <div className="dashboard-view">
+                {refreshingDashboard && (
+                  <Loading
+                    overlay
+                    label="Reconstruindo dashboard"
+                    description="A IA está recalculando os gráficos e preparando uma nova análise."
+                  />
+                )}
+
                 <div className="dashboard-view-header">
                   <div>
                     <h2 className="dashboard-title-hidden">{selectedDashboard.title}</h2>

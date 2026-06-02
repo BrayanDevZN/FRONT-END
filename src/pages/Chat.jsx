@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
 import AppLayout from "../components/AppLayout";
+import Loading from "../components/Loading";
 
 import { sendChatMessage } from "../api/aiApi";
 import {
@@ -159,7 +160,13 @@ export default function Chat() {
             ))
           )}
 
-          {loading && <p className="loading-message">Pensando...</p>}
+          {loading && (
+            <Loading
+              compact
+              label="Analisando sua mensagem"
+              description="A IA está preparando uma resposta."
+            />
+          )}
         </div>
 
         {error && <p className="error-message">{error}</p>}
