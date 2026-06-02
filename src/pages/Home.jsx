@@ -14,6 +14,7 @@ import {
 
 import AppLayout from "../components/AppLayout";
 import Loading from "../components/Loading";
+import ProfileAvatar from "../components/ProfileAvatar";
 import { getDashboards } from "../api/dashboardApi";
 import { getDataSources } from "../api/dataSourceApi";
 import { getConversations, getMe } from "../api/accountsApi";
@@ -30,6 +31,10 @@ function getUserName(meResponse) {
     meResponse?.data?.name ||
     "Usuário"
   );
+}
+
+function getUser(meResponse) {
+  return meResponse?.user || meResponse?.data || meResponse || {};
 }
 
 export default function Home() {
@@ -77,6 +82,7 @@ export default function Home() {
   }, []);
 
   const userName = getUserName(user);
+  const currentUser = getUser(user);
 
   const outdatedDashboards = useMemo(
     () => dashboards.filter((dashboard) => dashboard.is_outdated),
@@ -107,10 +113,7 @@ export default function Home() {
 
             <h1>Central da plataforma</h1>
 
-            <p>
-              Bem-vindo, <strong>{userName}</strong>. Aqui você acompanha suas
-              fontes, dashboards, análises e conversas em um só lugar.
-            </p>
+            <p>Fontes, dashboards, análises e conversas organizados em um só lugar.</p>
           </div>
 
           <div className="home-hero-actions">
@@ -128,6 +131,23 @@ export default function Home() {
               <Plus size={18} />
               Novo dashboard
             </button>
+          </div>
+        </section>
+
+        <section className="home-welcome-card">
+          <ProfileAvatar
+            image={currentUser.profile_image}
+            name={userName}
+            size="large"
+          />
+
+          <div>
+            <span>Seu espaço de trabalho</span>
+            <h2>Bem-vindo, {userName}</h2>
+            <p>
+              @{currentUser.username || "usuario"} · Continue de onde parou e
+              transforme seus dados em decisões mais claras.
+            </p>
           </div>
         </section>
 

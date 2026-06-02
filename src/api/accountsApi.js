@@ -49,6 +49,13 @@ export function validUser(email) {
   });
 }
 
+export function validUsername(username) {
+  return request("/valid_username", {
+    method: "POST",
+    body: JSON.stringify({ username }),
+  });
+}
+
 export function login(email, password) {
   return request("/login", {
     method: "POST",
@@ -92,6 +99,20 @@ export function updateName(token, name) {
   return request("/update_name", {
     method: "PATCH",
     body: JSON.stringify({ token, name }),
+  });
+}
+
+export function updateUsername(token, username) {
+  return request("/update_username", {
+    method: "PATCH",
+    body: JSON.stringify({ token, username }),
+  });
+}
+
+export function updateProfileImage(token, profile_image) {
+  return request("/update_profile_image", {
+    method: "PATCH",
+    body: JSON.stringify({ token, profile_image }),
   });
 }
 

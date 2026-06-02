@@ -5712,3 +5712,230 @@ button:not(:disabled):active {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* =========================
+   User profiles
+========================= */
+
+.profile-avatar {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  overflow: hidden;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #dbeafe, #ede9fe);
+  color: #2563eb;
+  box-shadow: 0 14px 32px rgba(37, 99, 235, 0.18);
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-avatar svg {
+  width: 48%;
+  height: 48%;
+}
+
+.profile-avatar-medium {
+  width: 58px;
+  height: 58px;
+}
+
+.profile-avatar-large {
+  width: 84px;
+  height: 84px;
+}
+
+.profile-avatar-xlarge {
+  width: 142px;
+  height: 142px;
+}
+
+.profile-photo-editor {
+  position: relative;
+  width: fit-content;
+}
+
+.profile-photo-edit-button {
+  position: absolute;
+  right: -3px;
+  bottom: 2px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.3);
+}
+
+.profile-photo-edit-button:hover {
+  transform: translateY(-2px) scale(1.04);
+}
+
+.profile-photo-edit-button input {
+  display: none;
+}
+
+.profile-setup-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 12% 8%, rgba(37, 99, 235, 0.18), transparent 22rem),
+    radial-gradient(circle at 90% 88%, rgba(124, 58, 237, 0.14), transparent 24rem),
+    #f4f7fb;
+}
+
+.profile-setup-card {
+  width: min(100%, 620px);
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  padding: 42px;
+  border: 1px solid rgba(219, 234, 254, 0.92);
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 32px 90px rgba(15, 23, 42, 0.16);
+  text-align: center;
+  backdrop-filter: blur(18px);
+  animation: dp-modal-enter 0.42s ease both;
+}
+
+.profile-setup-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #4f46e5;
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.profile-setup-card h1 {
+  margin: 0;
+  color: var(--primary-900);
+  font-size: clamp(30px, 5vw, 42px);
+  letter-spacing: -0.06em;
+}
+
+.profile-setup-card p {
+  max-width: 500px;
+  margin: 10px 0 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.profile-setup-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.profile-setup-skip,
+.profile-setup-primary {
+  min-height: 46px;
+  padding: 0 18px;
+  border-radius: 15px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.profile-setup-skip {
+  color: #475569;
+  background: #eef2f7;
+}
+
+.profile-setup-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #fff;
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+.home-welcome-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 20px 22px;
+  border: 1px solid rgba(191, 219, 254, 0.9);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 92% 0%, rgba(196, 181, 253, 0.34), transparent 15rem),
+    linear-gradient(135deg, #ffffff, #eff6ff);
+  box-shadow: var(--soft-shadow);
+}
+
+.home-welcome-card span {
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-welcome-card h2 {
+  margin: 5px 0 4px;
+  color: var(--primary-900);
+  font-size: 23px;
+  letter-spacing: -0.04em;
+}
+
+.home-welcome-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.settings-profile-photo-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 17px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.settings-profile-photo-row strong {
+  display: block;
+  color: var(--primary-900);
+}
+
+.settings-profile-photo-row p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.settings-dp-account-card .profile-photo-editor {
+  margin: 0 auto;
+}
+
+@media (max-width: 560px) {
+  .profile-setup-card {
+    padding: 28px 20px;
+  }
+
+  .home-welcome-card {
+    align-items: flex-start;
+  }
+
+  .profile-avatar-large {
+    width: 68px;
+    height: 68px;
+  }
+}

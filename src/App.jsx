@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import RegisterCode from "./pages/RegisterCode";
 import ForgotPassword from "./pages/ForgotPassword";
 import ForgotPasswordCode from "./pages/ForgotPasswordCode";
+import ProfilePhotoSetup from "./pages/ProfilePhotoSetup";
 
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
@@ -30,6 +31,15 @@ function App() {
 
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/forgot-password-code" element={<ForgotPasswordCode />} />
+
+        <Route
+          path="/profile-photo-setup"
+          element={
+            <PrivateRoute>
+              <ProfilePhotoSetup />
+            </PrivateRoute>
+          }
+        />
 
         <Route
           path="/home"

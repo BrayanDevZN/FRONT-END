@@ -7,6 +7,7 @@ import {
   EyeOff,
   LockKeyhole,
   Mail,
+  Pencil,
   ShieldAlert,
   ShieldCheck,
   Trash2,
@@ -15,12 +16,16 @@ import {
 } from "lucide-react";
 
 import AppLayout from "../components/AppLayout";
+import ProfileAvatar from "../components/ProfileAvatar";
 
 import { getToken, removeToken } from "../utils/storage";
+import { fileToProfileImage } from "../utils/profileImage";
 import {
   getMe,
   updateName,
+  updateProfileImage,
   updatePassword,
+  updateUsername,
   deleteAccount,
 } from "../api/accountsApi";
 
@@ -29,6 +34,9 @@ export default function Settings() {
 
   const [currentName, setCurrentName] = useState("Carregando...");
   const [name, setName] = useState("");
+  const [currentUsername, setCurrentUsername] = useState("");
+  const [username, setUsername] = useState("");
+  const [profileImage, setProfileImage] = useState("");
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -48,6 +56,8 @@ export default function Settings() {
 
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [loadingName, setLoadingName] = useState(false);
+  const [loadingUsername, setLoadingUsername] = useState(false);
+  const [loadingPhoto, setLoadingPhoto] = useState(false);
   const [loadingPassword, setLoadingPassword] = useState(false);
   const [loadingDelete, setLoadingDelete] = useState(false);
 
@@ -69,6 +79,8 @@ export default function Settings() {
       }
 
       setCurrentName(response.user.name || "Não informado");
+      setCurrentUsername(response.user.username || "");
+      setProfileImage(response.user.profile_image || "");
     } catch (err) {
       console.error("Erro ao carregar perfil:", err);
       setCurrentName("Não informado");
@@ -122,6 +134,71 @@ export default function Settings() {
       setError(err.message || "Erro ao atualizar nome.");
     } finally {
       setLoadingName(false);
+    }
+  }
+
+  async function handleUpdateUsername(event) {
+    event.preventDefault();
+
+    const cleanUsername = username.trim().toLowerCase();
+
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(cleanUsername)) {
+      setError("Use de 3 a 30 caracteres: letras, números ou _.");
+      setSuccess("");
+      return;
+    }
+
+    if (cleanUsername === currentUsername) {
+      setError("O novo nome de usuário precisa ser diferente do atual.");
+      setSuccess("");
+      return;
+    }
+
+    try {
+      setLoadingUsername(true);
+      setError("");
+      setSuccess("");
+
+      const response = await updateUsername(getToken(), cleanUsername);
+
+      if (response?.status === "exists") {
+        throw new Error("Esse nome de usuário já está em uso.");
+      }
+
+      if (response?.status === false) {
+        throw new Error("Não foi possível atualizar o nome de usuário.");
+      }
+
+      setCurrentUsername(cleanUsername);
+      setUsername("");
+      setSuccess("Nome de usuário atualizado com sucesso.");
+    } catch (err) {
+      setError(err.message || "Erro ao atualizar nome de usuário.");
+    } finally {
+      setLoadingUsername(false);
+    }
+  }
+
+  async function handleProfileImageChange(event) {
+    try {
+      setLoadingPhoto(true);
+      setError("");
+      setSuccess("");
+
+      const nextImage = await fileToProfileImage(event.target.files[0]);
+      const response = await updateProfileImage(getToken(), nextImage);
+
+      if (response?.status === false) {
+        throw new Error(response?.message || "Não foi possível atualizar sua foto.");
+      }
+
+      setProfileImage(nextImage);
+      setSuccess("Foto de perfil atualizada com sucesso.");
+    } catch (err) {
+      setError(err.message || "Erro ao atualizar foto.");
+    } finally {
+      setLoadingPhoto(false);
+      event.target.value = "";
     }
   }
 
@@ -269,6 +346,35 @@ export default function Settings() {
 
         <section className="settings-dp-grid">
           <div className="settings-dp-main">
+            <section className="settings-dp-card settings-profile-photo-card">
+              <header className="settings-dp-card-header">
+                <span className="settings-dp-icon-box settings-dp-icon-blue">
+                  <UserRound size={22} />
+                </span>
+
+                <div>
+                  <h2>Foto de perfil</h2>
+                  <p>Escolha a imagem que representa você na plataforma.</p>
+                </div>
+              </header>
+
+              <div className="settings-profile-photo-row">
+                <div className="profile-photo-editor">
+                  <ProfileAvatar image={profileImage} name={currentName} size="large" />
+
+                  <label className="profile-photo-edit-button" title="Alterar foto de perfil">
+                    <Pencil size={16} />
+                    <input type="file" accept="image/*" onChange={handleProfileImageChange} disabled={loadingPhoto} />
+                  </label>
+                </div>
+
+                <div>
+                  <strong>{loadingPhoto ? "Atualizando foto..." : "Sua foto de perfil"}</strong>
+                  <p>Formatos de imagem comuns, com até 5 MB.</p>
+                </div>
+              </div>
+            </section>
+
             <form className="settings-dp-card" onSubmit={handleUpdateName}>
               <header className="settings-dp-card-header">
                 <span className="settings-dp-icon-box settings-dp-icon-blue">
@@ -302,6 +408,39 @@ export default function Settings() {
                   disabled={loadingName || loadingProfile}
                 >
                   {loadingName ? "Atualizando..." : "Atualizar nome"}
+                </button>
+              </div>
+            </form>
+
+            <form className="settings-dp-card" onSubmit={handleUpdateUsername}>
+              <header className="settings-dp-card-header">
+                <span className="settings-dp-icon-box settings-dp-icon-navy">
+                  <UserRound size={22} />
+                </span>
+
+                <div>
+                  <h2>Nome de usuário</h2>
+                  <p>Seu identificador único dentro da plataforma.</p>
+                </div>
+              </header>
+
+              <div className="settings-dp-current-box">
+                <span>Nome de usuário atual</span>
+                <strong>@{currentUsername || "usuario"}</strong>
+              </div>
+
+              <label className="settings-label settings-dp-field">
+                Novo nome de usuário
+                <input
+                  value={username}
+                  onChange={(event) => setUsername(event.target.value)}
+                  placeholder="Ex: brayan_dev"
+                />
+              </label>
+
+              <div className="settings-dp-actions">
+                <button type="submit" className="settings-dp-primary-button" disabled={loadingUsername || loadingProfile}>
+                  {loadingUsername ? "Atualizando..." : "Atualizar nome de usuário"}
                 </button>
               </div>
             </form>
@@ -417,12 +556,17 @@ export default function Settings() {
 
           <aside className="settings-dp-side">
             <section className="settings-dp-card settings-dp-account-card">
-              <div className="settings-dp-account-avatar">
-                <UserRound size={34} />
+              <div className="profile-photo-editor">
+                <ProfileAvatar image={profileImage} name={currentName} size="large" />
+
+                <label className="profile-photo-edit-button" title="Alterar foto de perfil">
+                  <Pencil size={15} />
+                  <input type="file" accept="image/*" onChange={handleProfileImageChange} disabled={loadingPhoto} />
+                </label>
               </div>
 
               <h3>{loadingProfile ? "Carregando..." : currentName}</h3>
-              <p>Perfil do DataPilot AI.</p>
+              <p>@{currentUsername || "usuario"}</p>
 
               <div className="settings-dp-status-list">
                 <span>

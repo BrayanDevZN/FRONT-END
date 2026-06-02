@@ -5,7 +5,7 @@ import AuthLayout from "../components/AuthLayout";
 import Input from "../components/Input";
 import Button from "../components/Button";
 
-import { validUser, sendCreateCode } from "../api/accountsApi";
+import { validUser, validUsername, sendCreateCode } from "../api/accountsApi";
 import { saveRegisterData } from "../utils/storage";
 
 export default function Register() {
@@ -13,6 +13,7 @@ export default function Register() {
 
   const [form, setForm] = useState({
     name: "",
+    username: "",
     email: "",
     age: "",
     gender: "",
@@ -35,6 +36,10 @@ export default function Register() {
     const password = form.password;
 
     if (!form.name.trim()) return "Digite seu nome.";
+
+    if (!/^[a-zA-Z0-9_]{3,30}$/.test(form.username.trim())) {
+      return "O nome de usuário deve ter entre 3 e 30 caracteres e usar apenas letras, números ou _.";
+    }
 
     if (!email) return "Digite seu email.";
     if (!email.endsWith("@gmail.com")) {
@@ -94,10 +99,19 @@ export default function Register() {
         return;
       }
 
+      const username = form.username.trim().toLowerCase();
+      const usernameResponse = await validUsername(username);
+
+      if (usernameResponse?.exists === true) {
+        setError("Esse nome de usuário já está em uso.");
+        return;
+      }
+
       await sendCreateCode(email);
 
       saveRegisterData({
         name: form.name.trim(),
+        username,
         email,
         age: Number(form.age),
         gender: form.gender,
@@ -131,6 +145,13 @@ export default function Register() {
           value={form.email}
           onChange={(e) => updateField("email", e.target.value)}
           placeholder="exemplo@gmail.com"
+        />
+
+        <Input
+          label="Nome de usuário"
+          value={form.username}
+          onChange={(e) => updateField("username", e.target.value)}
+          placeholder="Ex: brayan_dev"
         />
 
         <Input

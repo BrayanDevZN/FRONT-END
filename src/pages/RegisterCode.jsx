@@ -57,7 +57,7 @@ export default function RegisterCode() {
       saveToken(token);
       removeRegisterData();
 
-      navigate("/home");
+      navigate("/profile-photo-setup");
     } catch (err) {
       setError(err.message || "Erro ao criar conta.");
     } finally {
