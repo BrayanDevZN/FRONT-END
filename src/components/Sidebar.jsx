@@ -265,11 +265,6 @@ export default function SidebarWithDataSources() {
       return;
     }
 
-    if (!prompt) {
-      setModalError("Digite o prompt da análise.");
-      return;
-    }
-
     try {
       setLoading(true);
       setModalError("");
@@ -864,11 +859,12 @@ export default function SidebarWithDataSources() {
             </label>
 
             <label className="settings-label">
-              Prompt da análise
+              Prompt da análise (opcional)
+
               <textarea
                 value={dashboardPrompt}
                 onChange={(event) => setDashboardPrompt(event.target.value)}
-                placeholder="Ex: Analise os produtos mais vendidos"
+                placeholder="Ex: Analise os produtos mais vendidos. Se deixar vazio, a IA fará uma análise geral completa."
               />
             </label>
 

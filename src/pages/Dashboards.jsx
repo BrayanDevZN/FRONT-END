@@ -731,7 +731,20 @@ export default function Dashboards() {
     }
 
     if (operation === "count" || configY === "count") {
-      const yKey = findRealKey(data, "count") || keys.find((key) => normalizeKey(key) === "count") || null;
+      const yKey =
+        findRealKey(data, "count") ||
+        findRealKey(data, "quantidade") ||
+        findRealKey(data, "total") ||
+        findRealKey(data, "qtd") ||
+        keys.find((key) => normalizeKey(key) === "count") ||
+        keys.find((key) => normalizeKey(key) === "quantidade") ||
+        keys.find((key) => normalizeKey(key) === "total") ||
+        keys.find((key) => normalizeKey(key) === "qtd") ||
+        keys.find((key) => normalizeKey(key).includes("quantidade")) ||
+        keys.find((key) => normalizeKey(key).includes("total")) ||
+        keys.find((key) => isMostlyNumeric(data, key)) ||
+        null;
+
       const xKey = findCategoryKey(data, configX, yKey);
 
       return { xKey, yKey };
