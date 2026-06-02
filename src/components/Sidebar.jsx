@@ -53,6 +53,11 @@ export default function SidebarWithDataSources() {
   const [openChatMenuId, setOpenChatMenuId] = useState(null);
   const [openDashboardMenuId, setOpenDashboardMenuId] = useState(null);
 
+  const [popoverPosition, setPopoverPosition] = useState({
+    top: 0,
+    left: 0,
+  });
+
   const [showDeleteChatModal, setShowDeleteChatModal] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState(null);
 
@@ -74,15 +79,23 @@ export default function SidebarWithDataSources() {
     return conversation.conversation_id || conversation.id;
   }
 
+  function closeSidebarMenus() {
+    setOpenChatMenuId(null);
+    setOpenDashboardMenuId(null);
+  }
+
   function goToChat(id, title) {
+    closeSidebarMenus();
     navigate(`/chat/${id}`, { state: { title } });
   }
 
   function goToHome() {
+    closeSidebarMenus();
     navigate("/home");
   }
 
   function goToDashboard(id) {
+    closeSidebarMenus();
     navigate(`/dashboards?dashboard_id=${id}`);
   }
 
@@ -291,10 +304,94 @@ export default function SidebarWithDataSources() {
       }
     } catch (err) {
       console.error("Erro ao criar dashboard:", err);
-      setModalError(err.message || "Erro ao criar dashboard.");
+
+      setModalError(
+        "A análise está demorando. Verificando se o dashboard foi criado..."
+      );
+
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 4000));
+
+        const token = getToken();
+
+        if (token) {
+          const response = await getDashboards(token);
+          const updatedDashboards = response?.dashboards || [];
+
+          setDashboards(updatedDashboards);
+
+          const createdDashboard = updatedDashboards.find(
+            (dashboard) =>
+              dashboard.title?.trim().toLowerCase() === title.toLowerCase()
+          );
+
+          if (createdDashboard?.id) {
+            setDashboardTitle("");
+            setDashboardPrompt("");
+            setSelectedDataSourceId("");
+            setShowNewDashboardModal(false);
+            setModalError("");
+
+            goToDashboard(createdDashboard.id);
+            return;
+          }
+        }
+      } catch (refreshError) {
+        console.error("Erro ao verificar dashboard criado:", refreshError);
+      }
+
+      setModalError(
+        "A análise pode ter sido concluída. Atualize a página ou confira a lista de dashboards."
+      );
     } finally {
       setLoading(false);
     }
+  }
+
+  function calculatePopoverPosition(event) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const menuWidth = 136;
+    const gap = 8;
+    const viewportWidth = window.innerWidth;
+
+    let left = rect.right + gap;
+
+    if (left + menuWidth > viewportWidth - 12) {
+      left = rect.left - menuWidth - gap;
+    }
+
+    return {
+      top: rect.top + rect.height / 2,
+      left,
+    };
+  }
+
+  function toggleDashboardMenu(event, dashboardId) {
+    event.stopPropagation();
+
+    setOpenChatMenuId(null);
+
+    if (openDashboardMenuId === dashboardId) {
+      setOpenDashboardMenuId(null);
+      return;
+    }
+
+    setPopoverPosition(calculatePopoverPosition(event));
+    setOpenDashboardMenuId(dashboardId);
+  }
+
+  function toggleChatMenu(event, chatId) {
+    event.stopPropagation();
+
+    setOpenDashboardMenuId(null);
+
+    if (openChatMenuId === chatId) {
+      setOpenChatMenuId(null);
+      return;
+    }
+
+    setPopoverPosition(calculatePopoverPosition(event));
+    setOpenChatMenuId(chatId);
   }
 
   function handleDeleteChat(event, id) {
@@ -356,7 +453,7 @@ export default function SidebarWithDataSources() {
       setShowDeleteDashboardModal(false);
 
       if (window.location.pathname.startsWith("/dashboards")) {
-        navigate("/dashboards");
+        navigate("/home");
       }
     } catch (err) {
       console.error("Erro ao deletar dashboard:", err);
@@ -399,6 +496,22 @@ export default function SidebarWithDataSources() {
         "open-dashboard-modal",
         handleOpenDashboardModal
       );
+    };
+  }, []);
+
+  useEffect(() => {
+    function handleClosePopover() {
+      closeSidebarMenus();
+    }
+
+    window.addEventListener("click", handleClosePopover);
+    window.addEventListener("scroll", handleClosePopover, true);
+    window.addEventListener("resize", handleClosePopover);
+
+    return () => {
+      window.removeEventListener("click", handleClosePopover);
+      window.removeEventListener("scroll", handleClosePopover, true);
+      window.removeEventListener("resize", handleClosePopover);
     };
   }, []);
 
@@ -482,21 +595,23 @@ export default function SidebarWithDataSources() {
                       <button
                         type="button"
                         className="sidebar-menu-button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setOpenDashboardMenuId(
-                            openDashboardMenuId === dashboard.id
-                              ? null
-                              : dashboard.id
-                          );
-                        }}
+                        onClick={(event) =>
+                          toggleDashboardMenu(event, dashboard.id)
+                        }
                       >
                         ⋯
                       </button>
                     )}
 
                     {openDashboardMenuId === dashboard.id && (
-                      <div className="sidebar-popover-menu">
+                      <div
+                        className="sidebar-popover-menu"
+                        onClick={(event) => event.stopPropagation()}
+                        style={{
+                          top: `${popoverPosition.top}px`,
+                          left: `${popoverPosition.left}px`,
+                        }}
+                      >
                         <button
                           type="button"
                           onClick={(event) =>
@@ -553,19 +668,21 @@ export default function SidebarWithDataSources() {
                         <button
                           type="button"
                           className="sidebar-menu-button"
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setOpenChatMenuId(
-                              openChatMenuId === id ? null : id
-                            );
-                          }}
+                          onClick={(event) => toggleChatMenu(event, id)}
                         >
                           ⋯
                         </button>
                       )}
 
                       {openChatMenuId === id && (
-                        <div className="sidebar-popover-menu">
+                        <div
+                          className="sidebar-popover-menu"
+                          onClick={(event) => event.stopPropagation()}
+                          style={{
+                            top: `${popoverPosition.top}px`,
+                            left: `${popoverPosition.left}px`,
+                          }}
+                        >
                           <button
                             type="button"
                             onClick={(event) => handleDeleteChat(event, id)}

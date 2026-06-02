@@ -133,6 +133,48 @@ export default function Dashboards() {
     }
   }
 
+  async function refreshDashboardList() {
+    const token = getToken();
+    const response = await getDashboards(token);
+    const dashboardList = response?.dashboards || [];
+
+    setDashboards(dashboardList);
+
+    return dashboardList;
+  }
+
+  function findDashboardByTitle(dashboardList, wantedTitle) {
+    const normalizedWantedTitle = String(wantedTitle || "")
+      .trim()
+      .toLowerCase();
+
+    return dashboardList.find(
+      (dashboard) =>
+        dashboard.title?.trim().toLowerCase() === normalizedWantedTitle
+    );
+  }
+
+  async function verifyDashboardCreatedByTitle(wantedTitle) {
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+
+    const dashboardList = await refreshDashboardList();
+    const createdDashboard = findDashboardByTitle(dashboardList, wantedTitle);
+
+    if (createdDashboard?.id) {
+      await openDashboard(createdDashboard.id);
+      return createdDashboard;
+    }
+
+    return null;
+  }
+
+  async function verifyDashboardRefreshed(dashboardId) {
+    await new Promise((resolve) => setTimeout(resolve, 4000));
+
+    await refreshDashboardList();
+    await openDashboard(dashboardId);
+  }
+
   function getChartId(chart, index) {
     return String(chart?.id || chart?.chart_id || `chart_${index}`);
   }
@@ -343,9 +385,36 @@ export default function Dashboards() {
 
       toast.success("Dashboard atualizado com sucesso.");
     } catch (err) {
-      const message = err.message || "Erro ao atualizar dashboard.";
-      setError(message);
-      toast.error(message);
+      console.error("Erro ao atualizar dashboard:", err);
+
+      const dashboardId = selectedDashboard.id;
+
+      setError("A atualização está demorando. Verificando se o dashboard foi atualizado...");
+      toast.loading("Verificando atualização do dashboard...", {
+        id: "refresh-dashboard-check",
+      });
+
+      try {
+        await verifyDashboardRefreshed(dashboardId);
+
+        setError("");
+        toast.success("Dashboard atualizado com sucesso.", {
+          id: "refresh-dashboard-check",
+        });
+
+        return;
+      } catch (refreshError) {
+        console.error("Erro ao verificar atualização do dashboard:", refreshError);
+      }
+
+      toast.error(
+        "A atualização pode ter sido concluída. Atualize a página ou abra o dashboard novamente.",
+        { id: "refresh-dashboard-check" }
+      );
+
+      setError(
+        "A atualização pode ter sido concluída. Atualize a página ou abra o dashboard novamente."
+      );
     } finally {
       setRefreshingDashboard(false);
     }
@@ -386,7 +455,30 @@ export default function Dashboards() {
 
       await loadDashboards();
     } catch (err) {
-      setError(err.message || "Erro ao gerar dashboard.");
+      console.error("Erro ao gerar dashboard:", err);
+
+      setError("A análise está demorando. Verificando se o dashboard foi criado...");
+
+      try {
+        const createdDashboard = await verifyDashboardCreatedByTitle(title.trim());
+
+        if (createdDashboard?.id) {
+          setShowCreate(false);
+          setTitle("");
+          setPrompt("");
+          setFile(null);
+          setError("");
+
+          toast.success("Dashboard criado com sucesso.");
+          return;
+        }
+      } catch (refreshError) {
+        console.error("Erro ao verificar dashboard criado:", refreshError);
+      }
+
+      setError(
+        "A análise pode ter sido concluída. Atualize a página ou confira a lista de dashboards."
+      );
     } finally {
       setLoading(false);
     }

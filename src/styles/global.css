@@ -570,7 +570,7 @@ a:hover {
   flex-direction: column;
   justify-content: space-between;
   transition: width 0.25s ease, min-width 0.25s ease;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .sidebar-collapsed {
@@ -581,7 +581,8 @@ a:hover {
 .sidebar-top {
   flex: 1;
   min-height: 0;
-  overflow: auto;
+  overflow-x: visible;
+  overflow-y: auto;
   padding-bottom: 14px;
 }
 
@@ -5097,4 +5098,84 @@ a:hover {
     width: 100%;
     justify-content: center;
   }
+}
+.sidebar-popover-menu {
+  position: absolute;
+  top: 50%;
+  right: -10px;
+  transform: translate(100%, -50%);
+
+  z-index: 99999;
+
+  min-width: 130px;
+  padding: 6px;
+  border-radius: 12px;
+
+  background: #fff;
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24);
+}
+.sidebar {
+  overflow: visible;
+}
+
+.sidebar-section,
+.sidebar-list,
+.sidebar-row {
+  overflow: visible;
+}
+
+.sidebar-row {
+  position: relative;
+}
+.sidebar {
+  overflow: hidden;
+}
+
+.sidebar-top {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.sidebar-row {
+  position: relative;
+  overflow: visible;
+}
+
+.sidebar-popover-menu {
+  position: absolute;
+  top: 32px;
+  right: 8px;
+  z-index: 99999;
+
+  min-width: 126px;
+  padding: 6px;
+  border-radius: 12px;
+
+  background: #ffffff;
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.24);
+}
+.sidebar-popover-menu {
+  position: fixed;
+  z-index: 999999;
+  transform: translateY(-50%);
+  min-width: 130px;
+}
+.sidebar-popover-menu {
+  position: fixed;
+  z-index: 999999;
+
+  width: 140px;
+  min-width: 140px;
+  max-width: 140px;
+
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.12);
+
+  padding: 6px;
+
+  transform: translateY(-50%);
 }
