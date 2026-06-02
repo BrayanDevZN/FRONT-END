@@ -2,7 +2,14 @@ const AI_URL = "https://web-production-40ead.up.railway.app";
 const ACCOUNTS_URL = "https://web-production-81b91.up.railway.app";
 
 async function parseResponse(response, fallbackMessage) {
-  const data = await response.json().catch(() => null);
+  const text = await response.text().catch(() => "");
+  let data = null;
+
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = null;
+  }
 
   if (!response.ok) {
     let message = fallbackMessage;
@@ -19,14 +26,46 @@ async function parseResponse(response, fallbackMessage) {
       message = data.message;
     } else if (data?.error) {
       message = data.error;
+    } else if (text) {
+      message = text;
     }
 
-    console.log("ERRO COMPLETO DA API:", data);
+    console.log("ERRO COMPLETO DA API:", {
+      status: response.status,
+      statusText: response.statusText,
+      body: data || text,
+    });
 
     throw new Error(message);
   }
 
-  return data;
+  return data || {};
+}
+
+async function safeFetch(url, options, fallbackMessage) {
+  try {
+    console.log("CHAMANDO API:", url);
+
+    const response = await fetch(url, options);
+
+    return await parseResponse(response, fallbackMessage);
+  } catch (error) {
+    console.error("ERRO NO FETCH:", {
+      url,
+      error,
+    });
+
+    if (
+      error?.message === "Failed to fetch" ||
+      error instanceof TypeError
+    ) {
+      throw new Error(
+        "Não foi possível conectar com a API. Verifique se a API está online, se a URL está correta e se o CORS está liberado."
+      );
+    }
+
+    throw error;
+  }
 }
 
 function normalizeChartsPayload(data) {
@@ -62,13 +101,12 @@ export async function generateDashboard({
   formData.append("prompt", prompt || "");
   formData.append("data_source_id", String(data_source_id));
 
-  const response = await fetch(`${AI_URL}/dashboard/analyze`, {
-    method: "POST",
-    body: formData,
-  });
-
-  const data = await parseResponse(
-    response,
+  const data = await safeFetch(
+    `${AI_URL}/dashboard/analyze`,
+    {
+      method: "POST",
+      body: formData,
+    },
     "Erro ao gerar dashboard."
   );
 
@@ -95,19 +133,18 @@ export async function refreshDashboard({
   formData.append("data_source_id", String(dashboard.data_source_id));
   formData.append("dashboard_id", String(dashboard.id));
 
-  const response = await fetch(`${AI_URL}/dashboard/analyze`, {
-    method: "POST",
-    body: formData,
-  });
-
   const analyzedData = normalizeChartsPayload(
-    await parseResponse(
-      response,
+    await safeFetch(
+      `${AI_URL}/dashboard/analyze`,
+      {
+        method: "POST",
+        body: formData,
+      },
       "Erro ao atualizar análise do dashboard."
     )
   );
 
-  const finishResponse = await fetch(
+  const savedData = await safeFetch(
     `${ACCOUNTS_URL}/dashboard/refresh/finish`,
     {
       method: "POST",
@@ -127,11 +164,7 @@ export async function refreshDashboard({
           analyzedData.dashboard?.charts ||
           [],
       }),
-    }
-  );
-
-  const savedData = await parseResponse(
-    finishResponse,
+    },
     "Erro ao salvar atualização do dashboard."
   );
 
@@ -157,31 +190,32 @@ export async function refreshDashboards({
 }
 
 export async function getDashboards(token) {
-  const response = await fetch(`${ACCOUNTS_URL}/dashboards`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  return safeFetch(
+    `${ACCOUNTS_URL}/dashboards`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ token }),
     },
-    body: JSON.stringify({ token }),
-  });
-
-  return parseResponse(response, "Erro ao buscar dashboards.");
+    "Erro ao buscar dashboards."
+  );
 }
 
 export async function getDashboard(token, dashboard_id) {
-  const response = await fetch(`${ACCOUNTS_URL}/dashboard`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  const data = await safeFetch(
+    `${ACCOUNTS_URL}/dashboard`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        token,
+        dashboard_id: Number(dashboard_id),
+      }),
     },
-    body: JSON.stringify({
-      token,
-      dashboard_id: Number(dashboard_id),
-    }),
-  });
-
-  const data = await parseResponse(
-    response,
     "Erro ao abrir dashboard."
   );
 
@@ -189,18 +223,20 @@ export async function getDashboard(token, dashboard_id) {
 }
 
 export async function deleteDashboard(token, dashboard_id) {
-  const response = await fetch(`${ACCOUNTS_URL}/dashboard`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
+  return safeFetch(
+    `${ACCOUNTS_URL}/dashboard`,
+    {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        token,
+        dashboard_id: Number(dashboard_id),
+      }),
     },
-    body: JSON.stringify({
-      token,
-      dashboard_id: Number(dashboard_id),
-    }),
-  });
-
-  return parseResponse(response, "Erro ao deletar dashboard.");
+    "Erro ao deletar dashboard."
+  );
 }
 
 export async function saveChartSettings({
@@ -235,7 +271,7 @@ export async function saveChartSettings({
     body.chart_id = Number(chart_id);
   }
 
-  const response = await fetch(
+  return safeFetch(
     `${ACCOUNTS_URL}/dashboard/chart/settings`,
     {
       method: "POST",
@@ -243,11 +279,7 @@ export async function saveChartSettings({
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
-    }
-  );
-
-  return parseResponse(
-    response,
+    },
     "Erro ao salvar configurações do gráfico."
   );
 }

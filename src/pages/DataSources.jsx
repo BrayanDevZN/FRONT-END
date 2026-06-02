@@ -92,6 +92,27 @@ export default function DataSources() {
     }
   }
 
+  async function refreshDataSourcesAndFind(matchFn) {
+    const token = getToken();
+    const response = await getDataSources(token);
+    const sources = response?.data_sources || [];
+
+    setDataSources(sources);
+
+    return sources.find(matchFn) || null;
+  }
+
+  function isLikelyFetchFailure(error) {
+    const message = String(error?.message || "").toLowerCase();
+
+    return (
+      message.includes("failed to fetch") ||
+      message.includes("requisição demorou") ||
+      message.includes("conexão foi interrompida") ||
+      error instanceof TypeError
+    );
+  }
+
   function resetUpdateState() {
     setUpdateFile(null);
     setPendingUpdateFile(null);
@@ -153,7 +174,32 @@ export default function DataSources() {
         await openDataSource(createdSource.id);
       }
     } catch (err) {
-      const message = err.message || "Erro ao criar fonte de dados.";
+      try {
+        const createdSource = await refreshDataSourcesAndFind(
+          (source) =>
+            source.name?.trim().toLowerCase() ===
+              sourceName.trim().toLowerCase() ||
+            source.file_name === sourceFile?.name
+        );
+
+        if (createdSource) {
+          toast.success("Fonte de dados criada com sucesso.");
+
+          setSourceName("");
+          setSourceFile(null);
+          setShowCreateModal(false);
+
+          await openDataSource(createdSource.id);
+          return;
+        }
+      } catch (refreshError) {
+        console.error("Erro ao verificar se a fonte foi salva:", refreshError);
+      }
+
+      const message = isLikelyFetchFailure(err)
+        ? "A fonte pode ter sido salva, mas a resposta demorou. Atualize a lista para conferir."
+        : err.message || "Erro ao criar fonte de dados.";
+
       setError(message);
       toast.error(message);
     } finally {
@@ -261,7 +307,32 @@ export default function DataSources() {
         await openDataSource(updatedSource.id);
       }
     } catch (err) {
-      const message = err.message || "Erro ao atualizar fonte.";
+      try {
+        const updatedSource = await refreshDataSourcesAndFind(
+          (source) => Number(source.id) === Number(selectedSource.id)
+        );
+
+        if (updatedSource) {
+          resetUpdateState();
+
+          await openDataSource(updatedSource.id);
+
+          toast.success(
+            shouldRefreshDashboards
+              ? "Fonte atualizada. Se algum dashboard ainda não mudou, atualize-o manualmente."
+              : "Fonte atualizada com sucesso."
+          );
+
+          return;
+        }
+      } catch (refreshError) {
+        console.error("Erro ao verificar se a fonte foi atualizada:", refreshError);
+      }
+
+      const message = isLikelyFetchFailure(err)
+        ? "A fonte pode ter sido atualizada, mas a resposta demorou. Atualize a lista para conferir."
+        : err.message || "Erro ao atualizar fonte.";
+
       setError(message);
       toast.error(message);
     } finally {
