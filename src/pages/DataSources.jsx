@@ -761,7 +761,9 @@ export default function DataSources() {
                 <button
                   type="button"
                   key={item.value}
-                  className={currentSourceType === item.value ? "is-active" : ""}
+                  className={`source-type-button ${
+                    currentSourceType === item.value ? "is-active" : ""
+                  }`}
                   onClick={() => onSourceTypeChange(item.value)}
                 >
                   <Icon size={18} />

@@ -7162,7 +7162,7 @@ body,
 }
 
 /* Cyan button unification */
-button:not(.sidebar-logo-button):not(.sidebar-nav-item):not(.sidebar-row-main):not(.sidebar-menu-button):not(.modal-cancel):not(.delete-cancel-button):not(.data-source-item):not(.home-card-button):not(.home-kpi-card),
+button:not(.sidebar-logo-button):not(.sidebar-nav-item):not(.sidebar-row-main):not(.sidebar-menu-button):not(.modal-cancel):not(.delete-cancel-button):not(.delete-confirm-button):not(.delete-account-button):not(.data-source-item):not(.data-source-danger-button):not(.settings-dp-danger-button):not(.collaboration-delete-button):not(.logout-confirm-button):not(.source-type-button):not(.permission-button):not(.home-card-button):not(.home-kpi-card),
 .primary-button,
 .topbar-cta,
 .modal-confirm,
@@ -7186,7 +7186,7 @@ button:not(.sidebar-logo-button):not(.sidebar-nav-item):not(.sidebar-row-main):n
   box-shadow: 0 14px 34px rgba(6, 182, 212, 0.24) !important;
 }
 
-button:not(.sidebar-logo-button):not(.sidebar-nav-item):not(.sidebar-row-main):not(.sidebar-menu-button):not(.modal-cancel):not(.delete-cancel-button):not(.data-source-item):not(.home-card-button):not(.home-kpi-card):hover,
+button:not(.sidebar-logo-button):not(.sidebar-nav-item):not(.sidebar-row-main):not(.sidebar-menu-button):not(.modal-cancel):not(.delete-cancel-button):not(.delete-confirm-button):not(.delete-account-button):not(.data-source-item):not(.data-source-danger-button):not(.settings-dp-danger-button):not(.collaboration-delete-button):not(.logout-confirm-button):not(.source-type-button):not(.permission-button):not(.home-card-button):not(.home-kpi-card):hover,
 .primary-button:hover:not(:disabled),
 .topbar-cta:hover:not(:disabled),
 .modal-confirm:hover:not(:disabled),
@@ -7565,6 +7565,18 @@ body .sidebar-popover-menu button {
   box-shadow: 0 14px 32px rgba(220, 38, 38, 0.24) !important;
 }
 
+body .logout-confirm-button {
+  min-width: 132px !important;
+  min-height: 46px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 12px !important;
+  padding: 0 22px !important;
+  font-size: 15px !important;
+  font-weight: 900 !important;
+}
+
 body .delete-confirm-button:hover:not(:disabled),
 body .delete-account-button:hover:not(:disabled),
 body .data-source-danger-button:hover:not(:disabled),
@@ -7591,6 +7603,15 @@ body .logout-confirm-button svg {
 }
 
 body .logout-cancel-button {
+  min-width: 96px !important;
+  min-height: 46px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 12px !important;
+  padding: 0 18px !important;
+  font-size: 15px !important;
+  font-weight: 850 !important;
   background: #e5e7eb !important;
   background-image: none !important;
   border: 1px solid #d1d5db !important;
@@ -7602,6 +7623,40 @@ body .logout-cancel-button:hover:not(:disabled) {
   background: #d1d5db !important;
   background-image: none !important;
   color: #111827 !important;
+}
+
+body .source-type-grid > button.source-type-button,
+body .permission-grid > button.permission-button {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border: 1px solid #dbe7f3 !important;
+  color: #07152e !important;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06) !important;
+}
+
+body .source-type-grid > button.source-type-button:hover,
+body .source-type-grid > button.source-type-button:focus-visible,
+body .source-type-grid > button.source-type-button.is-active,
+body .permission-grid > button.permission-button:hover,
+body .permission-grid > button.permission-button:focus-visible,
+body .permission-grid > button.permission-button.is-active {
+  background: #ffffff !important;
+  background-color: #ffffff !important;
+  background-image: none !important;
+  border-color: rgba(6, 182, 212, 0.58) !important;
+  color: #07152e !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(6, 182, 212, 0.24),
+    0 16px 36px rgba(14, 165, 233, 0.12) !important;
+}
+
+body .source-type-grid > button.source-type-button svg {
+  color: #0891b2 !important;
+}
+
+body .permission-grid > button.permission-button small {
+  color: #64748b !important;
 }
 
 @media (max-width: 900px) {

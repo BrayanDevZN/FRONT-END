@@ -311,7 +311,9 @@ export default function Collaborations() {
                     <button
                       type="button"
                       key={item.value}
-                      className={permission === item.value ? "is-active" : ""}
+                      className={`permission-button ${
+                        permission === item.value ? "is-active" : ""
+                      }`}
                       onClick={() => setPermission(item.value)}
                     >
                       <strong>{item.label}</strong>

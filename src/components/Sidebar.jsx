@@ -714,6 +714,7 @@ export default function SidebarWithDataSources() {
                       >
                         <button
                           type="button"
+                          className="delete-confirm-button sidebar-delete-button"
                           onClick={(event) =>
                             handleDeleteDashboard(event, dashboard.id)
                           }
@@ -816,6 +817,7 @@ export default function SidebarWithDataSources() {
                         >
                           <button
                             type="button"
+                            className="delete-confirm-button sidebar-delete-button"
                             onClick={(event) => handleDeleteChat(event, id)}
                           >
                             <Trash2 size={14} />
