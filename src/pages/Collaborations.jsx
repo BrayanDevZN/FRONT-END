@@ -404,7 +404,11 @@ export default function Collaborations() {
                     </option>
                   ))}
                 </select>
-                <button type="button" onClick={() => handleRemove(person.id)}>
+                <button
+                  type="button"
+                  className="collaboration-delete-button"
+                  onClick={() => handleRemove(person.id)}
+                >
                   <Trash2 size={17} />
                 </button>
               </div>
@@ -438,6 +442,7 @@ export default function Collaborations() {
                 </em>
                 <button
                   type="button"
+                  className="collaboration-delete-button"
                   onClick={() =>
                     handleRemove(dashboard.collaboration_id || dashboard.id)
                   }

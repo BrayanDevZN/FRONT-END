@@ -179,6 +179,51 @@ export default function DataSources() {
     return sources.find(matchFn) || null;
   }
 
+  function normalizeSourceLookup(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+  }
+
+  function isSameCreatedSource(source, wantedName, wantedFile) {
+    const sourceName = normalizeSourceLookup(source?.name);
+    const sourceFileName = normalizeSourceLookup(source?.file_name);
+    const nextName = normalizeSourceLookup(wantedName);
+    const nextFileName = normalizeSourceLookup(wantedFile?.name);
+
+    return (
+      sourceName === nextName ||
+      (nextFileName && sourceFileName === nextFileName)
+    );
+  }
+
+  async function waitForDataSource(matchFn, attempts = 8) {
+    let lastError = null;
+
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      try {
+        const source = await refreshDataSourcesAndFind(matchFn);
+
+        if (source) {
+          return source;
+        }
+      } catch (err) {
+        lastError = err;
+      }
+
+      if (attempt < attempts - 1) {
+        await new Promise((resolve) => setTimeout(resolve, 1200));
+      }
+    }
+
+    if (lastError) {
+      throw lastError;
+    }
+
+    return null;
+  }
+
   function addOrReplaceDataSource(source) {
     if (!source?.id) return;
 
@@ -212,6 +257,8 @@ export default function DataSources() {
 
     return (
       message.includes("failed to fetch") ||
+      message.includes("requisição demorou") ||
+      message.includes("conexão foi interrompida") ||
       message.includes("requisição demorou") ||
       message.includes("conexão foi interrompida") ||
       error instanceof TypeError
@@ -429,11 +476,9 @@ export default function DataSources() {
       reloadDataSourcesQuietly();
     } catch (err) {
       try {
-        const createdSource = await refreshDataSourcesAndFind(
+        const createdSource = await waitForDataSource(
           (source) =>
-            source.name?.trim().toLowerCase() ===
-              sourceName.trim().toLowerCase() ||
-            source.file_name === sourceFile?.name
+            isSameCreatedSource(source, sourceName, sourceFile)
         );
 
         if (createdSource) {
@@ -449,11 +494,17 @@ export default function DataSources() {
       }
 
       const message = isLikelyFetchFailure(err)
-        ? "A fonte pode ter sido salva, mas a resposta demorou. Atualize a lista para conferir."
+        ? "O arquivo foi enviado, mas o servidor ainda esta processando. Aguarde alguns segundos e atualize a lista."
         : err.message || "Erro ao criar fonte de dados.";
 
-      setError(message);
-      toast.error(message);
+      if (isLikelyFetchFailure(err) && sourcePayload.sourceType === "file") {
+        setError("");
+        toast.info(message);
+        reloadDataSourcesQuietly();
+      } else {
+        setError(message);
+        toast.error(message);
+      }
     } finally {
       setLoadingCreate(false);
     }

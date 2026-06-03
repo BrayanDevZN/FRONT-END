@@ -70,6 +70,7 @@ export default function SidebarWithDataSources() {
   const [showDeleteDashboardModal, setShowDeleteDashboardModal] =
     useState(false);
   const [dashboardToDelete, setDashboardToDelete] = useState(null);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const activeArea = useMemo(() => {
     if (location.pathname.startsWith("/home")) return "inicio";
@@ -80,6 +81,16 @@ export default function SidebarWithDataSources() {
     if (location.pathname.startsWith("/help")) return "help";
     if (location.pathname.startsWith("/settings")) return "settings";
     return "inicio";
+  }, [location.pathname]);
+
+  const activeDashboardId = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get("dashboard_id");
+  }, [location.search]);
+
+  const activeChatId = useMemo(() => {
+    if (!location.pathname.startsWith("/chat/")) return null;
+    return location.pathname.split("/")[2] || null;
   }, [location.pathname]);
 
   function getConversationId(conversation) {
@@ -509,7 +520,16 @@ export default function SidebarWithDataSources() {
     setShowDeleteDashboardModal(false);
   }
 
-  function handleLogout() {
+  function openLogoutModal() {
+    closeSidebarMenus();
+    setShowLogoutModal(true);
+  }
+
+  function cancelLogout() {
+    setShowLogoutModal(false);
+  }
+
+  function confirmLogout() {
     removeToken();
     navigate("/");
   }
@@ -657,7 +677,12 @@ export default function SidebarWithDataSources() {
                 dashboards.map((dashboard) => (
                   <div key={dashboard.id} className="sidebar-row">
                     <button
-                      className="sidebar-row-main"
+                      className={`sidebar-row-main ${
+                        activeArea === "dashboards" &&
+                        Number(activeDashboardId) === Number(dashboard.id)
+                          ? "is-active"
+                          : ""
+                      }`}
                       onClick={() => goToDashboard(dashboard.id)}
                       title={dashboard.title}
                     >
@@ -672,8 +697,9 @@ export default function SidebarWithDataSources() {
                         onClick={(event) =>
                           toggleDashboardMenu(event, dashboard.id)
                         }
+                        aria-label="Mais opcoes"
                       >
-                        ⋯
+                        <span className="sidebar-menu-dots">...</span>
                       </button>
                     )}
 
@@ -755,7 +781,12 @@ export default function SidebarWithDataSources() {
                   return (
                     <div key={id} className="sidebar-row">
                       <button
-                        className="sidebar-row-main"
+                        className={`sidebar-row-main ${
+                          activeArea === "ia" &&
+                          Number(activeChatId) === Number(id)
+                            ? "is-active"
+                            : ""
+                        }`}
                         onClick={() => goToChat(id, title)}
                         title={title}
                       >
@@ -768,8 +799,9 @@ export default function SidebarWithDataSources() {
                           type="button"
                           className="sidebar-menu-button"
                           onClick={(event) => toggleChatMenu(event, id)}
+                          aria-label="Mais opcoes"
                         >
-                          ⋯
+                          <span className="sidebar-menu-dots">...</span>
                         </button>
                       )}
 
@@ -827,7 +859,7 @@ export default function SidebarWithDataSources() {
           <button
             type="button"
             className="sidebar-nav-item sidebar-footer-nav-item"
-            onClick={handleLogout}
+            onClick={openLogoutModal}
             title="Sair"
           >
             <LogOut size={20} />
@@ -1073,6 +1105,37 @@ export default function SidebarWithDataSources() {
                 onClick={confirmDeleteDashboard}
               >
                 Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLogoutModal && (
+        <div className="modal-overlay">
+          <div className="modal-card">
+            <div className="modal-icon modal-icon-danger">
+              <LogOut size={22} />
+            </div>
+
+            <h2>Sair da conta?</h2>
+            <p>Tem certeza que deseja sair da sua conta agora?</p>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-cancel logout-cancel-button"
+                onClick={cancelLogout}
+              >
+                Não
+              </button>
+
+              <button
+                type="button"
+                className="logout-confirm-button"
+                onClick={confirmLogout}
+              >
+                Sair
               </button>
             </div>
           </div>

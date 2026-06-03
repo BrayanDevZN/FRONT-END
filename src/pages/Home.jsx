@@ -244,7 +244,7 @@ export default function Home() {
             </div>
 
             <div className="home-actions-grid">
-              <button onClick={() => navigate("/data-sources")}>
+              <button className="home-card-button" onClick={() => navigate("/data-sources")}>
                 <Database size={22} />
                 <span>
                   <strong>Adicionar fonte</strong>
@@ -253,7 +253,7 @@ export default function Home() {
                 <ArrowRight size={18} />
               </button>
 
-              <button onClick={openNewDashboard}>
+              <button className="home-card-button" onClick={openNewDashboard}>
                 <BarChart3 size={22} />
                 <span>
                   <strong>Criar dashboard</strong>
@@ -262,7 +262,7 @@ export default function Home() {
                 <ArrowRight size={18} />
               </button>
 
-              <button onClick={openNewChat}>
+              <button className="home-card-button" onClick={openNewChat}>
                 <MessageSquare size={22} />
                 <span>
                   <strong>Novo chat</strong>
@@ -271,7 +271,7 @@ export default function Home() {
                 <ArrowRight size={18} />
               </button>
 
-              <button onClick={() => navigate("/settings")}>
+              <button className="home-card-button" onClick={() => navigate("/settings")}>
                 <Settings size={22} />
                 <span>
                   <strong>Configurações</strong>
@@ -320,6 +320,7 @@ export default function Home() {
               ) : (
                 recentDashboards.map((dashboard) => (
                   <button
+                    className="home-card-button"
                     key={dashboard.id}
                     onClick={() =>
                       navigate(`/dashboards?dashboard_id=${dashboard.id}`)
@@ -361,6 +362,7 @@ export default function Home() {
 
                   return (
                     <button
+                      className="home-card-button"
                       key={id}
                       onClick={() =>
                         navigate(`/chat/${id}`, { state: { title } })
@@ -397,7 +399,7 @@ export default function Home() {
               <p className="home-empty">Nenhuma fonte cadastrada ainda.</p>
             ) : (
               recentSources.map((source) => (
-                <button key={source.id} onClick={() => navigate("/data-sources")}>
+                <button className="home-card-button" key={source.id} onClick={() => navigate("/data-sources")}>
                   <span className="home-recent-icon">
                     <Database size={18} />
                   </span>
@@ -429,7 +431,7 @@ export default function Home() {
               <p className="home-empty">Nenhum dashboard compartilhado com você ainda.</p>
             ) : (
               recentSharedDashboards.map((dashboard) => (
-                <button key={dashboard.id} onClick={() => navigate(`/dashboards?dashboard_id=${dashboard.id}`)}>
+                <button className="home-card-button" key={dashboard.id} onClick={() => navigate(`/dashboards?dashboard_id=${dashboard.id}`)}>
                   <span className="home-recent-icon"><BarChart3 size={18} /></span>
                   <span>
                     <strong>{dashboard.title}</strong>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { BarChart3, BrainCircuit, ShieldCheck } from "lucide-react";
 
 import Input from "../components/Input";
 import Button from "../components/Button";
@@ -12,9 +13,7 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [showPassword, setShowPassword] = useState(false);
-
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -45,7 +44,6 @@ export default function Login() {
 
     try {
       const normalizedEmail = email.trim().toLowerCase();
-
       const userResponse = await validUser(normalizedEmail);
 
       if (userResponse?.exists !== true) {
@@ -53,7 +51,6 @@ export default function Login() {
       }
 
       const response = await login(normalizedEmail, password);
-
       const token =
         response?.token || response?.access_token || response?.data?.token;
 
@@ -99,7 +96,9 @@ export default function Login() {
 
         <div className="feature-list">
           <div className="feature-item">
-            <div>📊</div>
+            <div>
+              <BarChart3 size={24} />
+            </div>
 
             <span>
               <strong>Visualização financeira completa</strong>
@@ -108,7 +107,9 @@ export default function Login() {
           </div>
 
           <div className="feature-item">
-            <div>🧠</div>
+            <div>
+              <BrainCircuit size={24} />
+            </div>
 
             <span>
               <strong>Copiloto financeiro com IA</strong>
@@ -117,7 +118,9 @@ export default function Login() {
           </div>
 
           <div className="feature-item">
-            <div>🔒</div>
+            <div>
+              <ShieldCheck size={24} />
+            </div>
 
             <span>
               <strong>Segurança e privacidade</strong>
@@ -187,7 +190,7 @@ export default function Login() {
         </form>
 
         <div className="secure-text">
-          <strong>🛡️ Seus dados protegidos com segurança</strong>
+          <strong>Seus dados protegidos com segurança</strong>
           <p>Utilizamos autenticação para proteger suas informações.</p>
         </div>
       </section>
