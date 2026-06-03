@@ -42,12 +42,38 @@ async function safeFetch(url, options, fallbackMessage) {
   }
 }
 
-export async function createDataSource({ token, name, file }) {
+export async function createDataSource({
+  token,
+  name,
+  sourceType = "file",
+  file,
+  apiUrl,
+  databaseUrl,
+  query,
+  refreshIntervalDays,
+}) {
   const formData = new FormData();
 
   formData.append("token", token);
   formData.append("name", name);
-  formData.append("file", file);
+  formData.append("source_type", sourceType);
+
+  if (refreshIntervalDays) {
+    formData.append("refresh_interval_days", String(refreshIntervalDays));
+  }
+
+  if (sourceType === "file" && file) {
+    formData.append("file", file);
+  }
+
+  if (sourceType === "web") {
+    formData.append("api_url", apiUrl || "");
+  }
+
+  if (sourceType === "database") {
+    formData.append("database_url", databaseUrl || "");
+    formData.append("query", query || "");
+  }
 
   return safeFetch(
     `${ACCOUNTS_URL}/data-source/create`,
@@ -110,7 +136,12 @@ export async function getLinkedDashboards(token, data_source_id) {
 export async function updateDataSource({
   token,
   data_source_id,
+  sourceType,
   file,
+  apiUrl,
+  databaseUrl,
+  query,
+  refreshIntervalDays,
   refreshDashboards = false,
 }) {
   const formData = new FormData();
@@ -118,7 +149,30 @@ export async function updateDataSource({
   formData.append("token", token);
   formData.append("data_source_id", Number(data_source_id));
   formData.append("refresh_dashboards", String(refreshDashboards));
-  formData.append("file", file);
+
+  if (sourceType) {
+    formData.append("source_type", sourceType);
+  }
+
+  if (refreshIntervalDays) {
+    formData.append("refresh_interval_days", String(refreshIntervalDays));
+  }
+
+  if (file) {
+    formData.append("file", file);
+  }
+
+  if (apiUrl !== undefined) {
+    formData.append("api_url", apiUrl || "");
+  }
+
+  if (databaseUrl !== undefined) {
+    formData.append("database_url", databaseUrl || "");
+  }
+
+  if (query !== undefined) {
+    formData.append("query", query || "");
+  }
 
   return safeFetch(
     `${ACCOUNTS_URL}/data-source/update`,

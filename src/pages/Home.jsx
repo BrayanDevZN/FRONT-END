@@ -10,6 +10,7 @@ import {
   Sparkles,
   AlertTriangle,
   ArrowRight,
+  Bell,
 } from "lucide-react";
 
 import AppLayout from "../components/AppLayout";
@@ -46,6 +47,7 @@ export default function Home() {
   const [dataSources, setDataSources] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   async function loadHomeData() {
     try {
@@ -81,6 +83,21 @@ export default function Home() {
 
   useEffect(() => {
     loadHomeData();
+  }, []);
+
+  useEffect(() => {
+    function handleNotificationsLoaded(event) {
+      setUnreadNotifications(event.detail?.unreadCount || 0);
+    }
+
+    window.addEventListener("notifications-loaded", handleNotificationsLoaded);
+
+    return () => {
+      window.removeEventListener(
+        "notifications-loaded",
+        handleNotificationsLoaded
+      );
+    };
   }, []);
 
   const userName = getUserName(user);
@@ -120,6 +137,19 @@ export default function Home() {
           </div>
 
           <div className="home-hero-actions">
+            <button
+              type="button"
+              className="home-notification-button"
+              onClick={() =>
+                window.dispatchEvent(new Event("open-notifications-modal"))
+              }
+              title="Notificações"
+              aria-label="Abrir notificações"
+            >
+              <Bell size={22} strokeWidth={2.4} />
+              {unreadNotifications > 0 && <span>{unreadNotifications}</span>}
+            </button>
+
             <button onClick={() => navigate("/data-sources")}>
               <Database size={18} />
               Nova fonte

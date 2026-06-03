@@ -39,6 +39,7 @@ import {
   saveChartSettings,
   refreshDashboard,
 } from "../api/dashboardApi";
+import { getDataSources } from "../api/dataSourceApi";
 
 import { getToken } from "../utils/storage";
 import { deleteCollaboration, getDashboardAccess } from "../api/collaborationApi";
@@ -80,7 +81,9 @@ export default function Dashboards() {
   const [showCreate, setShowCreate] = useState(false);
   const [title, setTitle] = useState("");
   const [prompt, setPrompt] = useState("");
-  const [file, setFile] = useState(null);
+  const [dataSources, setDataSources] = useState([]);
+  const [selectedDataSourceId, setSelectedDataSourceId] = useState("");
+  const [generationStatus, setGenerationStatus] = useState("");
 
   const [chartSettings, setChartSettings] = useState({});
 
@@ -371,7 +374,7 @@ export default function Dashboards() {
       pdf.save(`${selectedDashboard?.title || "dashboard"}.pdf`);
 
       toast.success("PDF exportado com sucesso.");
-    } catch (err) {
+    } catch {
       setError("Erro ao exportar PDF.");
       toast.error("Erro ao exportar PDF.");
     } finally {
@@ -453,6 +456,21 @@ export default function Dashboards() {
     }
   }
 
+  async function loadDashboardSources() {
+    try {
+      const response = await getDataSources(getToken());
+      const sources = response?.data_sources || [];
+
+      setDataSources(sources);
+
+      if (!selectedDataSourceId && sources[0]?.id) {
+        setSelectedDataSourceId(String(sources[0].id));
+      }
+    } catch (err) {
+      toast.error(err.message || "Erro ao buscar fontes de dados.");
+    }
+  }
+
   function handleRefreshDashboard() {
     refreshSelectedDashboard();
   }
@@ -506,9 +524,10 @@ export default function Dashboards() {
 
     if (!title.trim()) return setError("Digite o nome do dashboard.");
     if (!prompt.trim()) return setError("Digite o prompt da análise.");
-    if (!file) return setError("Anexe um arquivo CSV, XLSX ou JSON.");
+    if (!selectedDataSourceId) return setError("Escolha uma fonte de dados.");
 
     setLoading(true);
+    setGenerationStatus("Preparando a geracao do dashboard...");
     setError("");
 
     try {
@@ -518,7 +537,8 @@ export default function Dashboards() {
         token,
         title: title.trim(),
         prompt: prompt.trim(),
-        file,
+        data_source_id: selectedDataSourceId,
+        onStatus: setGenerationStatus,
       });
 
       const dashboard = {
@@ -532,7 +552,8 @@ export default function Dashboards() {
       setShowCreate(false);
       setTitle("");
       setPrompt("");
-      setFile(null);
+      setSelectedDataSourceId("");
+      setGenerationStatus("");
 
       await loadDashboards();
     } catch (err) {
@@ -547,7 +568,8 @@ export default function Dashboards() {
           setShowCreate(false);
           setTitle("");
           setPrompt("");
-          setFile(null);
+          setSelectedDataSourceId("");
+          setGenerationStatus("");
           setError("");
 
           toast.success("Dashboard criado com sucesso.");
@@ -562,6 +584,7 @@ export default function Dashboards() {
       );
     } finally {
       setLoading(false);
+      setGenerationStatus("");
     }
   }
 
@@ -926,6 +949,12 @@ export default function Dashboards() {
   useEffect(() => {
     loadDashboards();
   }, [searchParams]);
+
+  useEffect(() => {
+    if (showCreate) {
+      loadDashboardSources();
+    }
+  }, [showCreate]);
 
   useEffect(() => {
     if (!selectedDashboard) {
@@ -1585,12 +1614,29 @@ export default function Dashboards() {
                 </label>
 
                 <label className="settings-label">
-                  Arquivo
-                  <label className="custom-file-upload">
-                    <input type="file" accept=".csv,.xlsx,.xls,.json" onChange={(event) => setFile(event.target.files[0])} />
-                    <span>{file ? file.name : "Selecionar arquivo"}</span>
-                  </label>
+                  Fonte de dados
+                  <select
+                    value={selectedDataSourceId}
+                    onChange={(event) => setSelectedDataSourceId(event.target.value)}
+                  >
+                    <option value="">Selecione uma fonte</option>
+                    {dataSources.map((source) => (
+                      <option key={source.id} value={source.id}>
+                        {source.name} - {source.file_name}
+                      </option>
+                    ))}
+                  </select>
                 </label>
+
+                {dataSources.length === 0 && (
+                  <p className="dashboard-source-empty">
+                    Cadastre uma fonte de dados antes de gerar dashboards.
+                  </p>
+                )}
+
+                {generationStatus && (
+                  <p className="dashboard-stream-status">{generationStatus}</p>
+                )}
 
                 <div className="delete-modal-actions">
                   <button type="button" className="modal-cancel" onClick={() => setShowCreate(false)} disabled={loading}>

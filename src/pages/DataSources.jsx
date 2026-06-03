@@ -3,8 +3,10 @@ import toast from "react-hot-toast";
 import {
   Database,
   FileSpreadsheet,
+  Globe2,
   Plus,
   RefreshCcw,
+  Server,
   Trash2,
   UploadCloud,
 } from "lucide-react";
@@ -27,6 +29,11 @@ import {
 } from "../api/dashboardApi";
 
 const ROWS_STEP = 25;
+const SOURCE_TYPES = [
+  { value: "file", label: "Arquivo", icon: FileSpreadsheet },
+  { value: "web", label: "Web", icon: Globe2 },
+  { value: "database", label: "Banco de dados", icon: Server },
+];
 
 export default function DataSources() {
   const [dataSources, setDataSources] = useState([]);
@@ -38,9 +45,20 @@ export default function DataSources() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const [sourceName, setSourceName] = useState("");
+  const [sourceType, setSourceType] = useState("file");
   const [sourceFile, setSourceFile] = useState(null);
+  const [apiUrl, setApiUrl] = useState("");
+  const [databaseUrl, setDatabaseUrl] = useState("");
+  const [databaseQuery, setDatabaseQuery] = useState("");
+  const [refreshIntervalDays, setRefreshIntervalDays] = useState("");
+  const [updateSourceType, setUpdateSourceType] = useState("file");
   const [updateFile, setUpdateFile] = useState(null);
+  const [updateApiUrl, setUpdateApiUrl] = useState("");
+  const [updateDatabaseUrl, setUpdateDatabaseUrl] = useState("");
+  const [updateDatabaseQuery, setUpdateDatabaseQuery] = useState("");
+  const [updateRefreshIntervalDays, setUpdateRefreshIntervalDays] = useState("");
   const [pendingUpdateFile, setPendingUpdateFile] = useState(null);
+  const [pendingUpdatePayload, setPendingUpdatePayload] = useState(null);
   const [linkedDashboards, setLinkedDashboards] = useState([]);
 
   const [visibleRows, setVisibleRows] = useState(ROWS_STEP);
@@ -64,6 +82,7 @@ export default function DataSources() {
 
       const sources = response?.data_sources || [];
       setDataSources(sources);
+      refreshAutomaticallySyncedDashboards(response);
 
       if (!selectedSource && sources.length > 0) {
         await openDataSource(sources[0].id);
@@ -114,9 +133,87 @@ export default function DataSources() {
     );
   }
 
+  function getSourceTypeLabel(value) {
+    return SOURCE_TYPES.find((item) => item.value === value)?.label || "Arquivo";
+  }
+
+  function getRefreshNotice(days) {
+    if (!days) return "";
+
+    return `A cada ${days} dia${Number(days) === 1 ? "" : "s"}, esta fonte sera consultada de novo. Quando isso acontecer, os dashboards ligados serao reconstruidos automaticamente com o prompt salvo.`;
+  }
+
+  function buildCreatePayload() {
+    return {
+      sourceType,
+      file: sourceFile,
+      apiUrl,
+      databaseUrl,
+      query: databaseQuery,
+      refreshIntervalDays,
+    };
+  }
+
+  function buildUpdatePayload() {
+    return {
+      sourceType: updateSourceType,
+      file: updateFile,
+      apiUrl: updateApiUrl,
+      databaseUrl: updateDatabaseUrl,
+      query: updateDatabaseQuery,
+      refreshIntervalDays: updateRefreshIntervalDays,
+    };
+  }
+
+  function validateSourcePayload(payload, fileMessage) {
+    if (payload.sourceType === "file" && !payload.file) {
+      toast.error(fileMessage);
+      return false;
+    }
+
+    if (payload.sourceType === "web" && !payload.apiUrl.trim()) {
+      toast.error("Digite a URL da API.");
+      return false;
+    }
+
+    if (payload.sourceType === "database") {
+      if (!payload.databaseUrl.trim()) {
+        toast.error("Digite a URL de conexao do banco.");
+        return false;
+      }
+
+      if (!payload.query.trim()) {
+        toast.error("Digite a query SELECT.");
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  async function refreshAutomaticallySyncedDashboards(response) {
+    const dashboards = response?.auto_refresh_dashboards || [];
+
+    if (!dashboards.length) return;
+
+    try {
+      setLoadingRefreshDashboards(true);
+      await refreshLinkedDashboards({
+        token: getToken(),
+        dashboards,
+      });
+      toast.success("Fontes agendadas e dashboards vinculados foram atualizados.");
+    } catch (err) {
+      toast.error(err.message || "Fontes agendadas foram atualizadas; revise dashboards pendentes.");
+    } finally {
+      setLoadingRefreshDashboards(false);
+    }
+  }
+
   function resetUpdateState() {
     setUpdateFile(null);
     setPendingUpdateFile(null);
+    setPendingUpdatePayload(null);
     setLinkedDashboards([]);
     setShowUpdateModal(false);
     setShowLinkedDashboardsModal(false);
@@ -126,8 +223,28 @@ export default function DataSources() {
     if (loadingCreate) return;
 
     setSourceName("");
+    setSourceType("file");
     setSourceFile(null);
+    setApiUrl("");
+    setDatabaseUrl("");
+    setDatabaseQuery("");
+    setRefreshIntervalDays("");
     setShowCreateModal(false);
+  }
+
+  function openUpdateModal() {
+    if (!selectedSource) return;
+
+    const config = selectedSource.connection_config || {};
+    const nextType = selectedSource.source_type || "file";
+
+    setUpdateSourceType(nextType);
+    setUpdateFile(null);
+    setUpdateApiUrl(config.url || "");
+    setUpdateDatabaseUrl(config.database_url || "");
+    setUpdateDatabaseQuery(config.query || "");
+    setUpdateRefreshIntervalDays(selectedSource.refresh_interval_days || "");
+    setShowUpdateModal(true);
   }
 
   function closeUpdateModal() {
@@ -144,8 +261,9 @@ export default function DataSources() {
       return;
     }
 
-    if (!sourceFile) {
-      toast.error("Selecione um arquivo.");
+    const sourcePayload = buildCreatePayload();
+
+    if (!validateSourcePayload(sourcePayload, "Selecione um arquivo.")) {
       return;
     }
 
@@ -158,16 +276,14 @@ export default function DataSources() {
       const response = await createDataSource({
         token,
         name: sourceName.trim(),
-        file: sourceFile,
+        ...sourcePayload,
       });
 
       const createdSource = response?.data_source;
 
       toast.success("Fonte de dados criada com sucesso.");
 
-      setSourceName("");
-      setSourceFile(null);
-      setShowCreateModal(false);
+      closeCreateModal();
 
       await loadDataSources();
 
@@ -186,9 +302,7 @@ export default function DataSources() {
         if (createdSource) {
           toast.success("Fonte de dados criada com sucesso.");
 
-          setSourceName("");
-          setSourceFile(null);
-          setShowCreateModal(false);
+          closeCreateModal();
 
           await openDataSource(createdSource.id);
           return;
@@ -216,8 +330,9 @@ export default function DataSources() {
       return;
     }
 
-    if (!updateFile) {
-      toast.error("Selecione a nova planilha.");
+    const updatePayload = buildUpdatePayload();
+
+    if (!validateSourcePayload(updatePayload, "Selecione a nova planilha.")) {
       return;
     }
 
@@ -235,6 +350,7 @@ export default function DataSources() {
       const dashboards = response?.dashboards || [];
 
       setPendingUpdateFile(updateFile);
+      setPendingUpdatePayload(updatePayload);
       setLinkedDashboards(dashboards);
 
       if (dashboards.length > 0) {
@@ -246,7 +362,7 @@ export default function DataSources() {
       await executeUpdateSource({
         shouldRefreshDashboards: false,
         dashboardsToRefresh: [],
-        fileToUpload: updateFile,
+        payload: updatePayload,
       });
     } catch (err) {
       const message = err.message || "Erro ao verificar dashboards vinculados.";
@@ -261,14 +377,19 @@ export default function DataSources() {
     shouldRefreshDashboards,
     dashboardsToRefresh,
     fileToUpload,
+    payload,
   }) {
     if (!selectedSource?.id) {
       toast.error("Selecione uma fonte primeiro.");
       return;
     }
 
-    if (!fileToUpload) {
-      toast.error("Selecione a nova planilha.");
+    const finalPayload = payload || {
+      ...buildUpdatePayload(),
+      file: fileToUpload,
+    };
+
+    if (!validateSourcePayload(finalPayload, "Selecione a nova planilha.")) {
       return;
     }
 
@@ -281,7 +402,7 @@ export default function DataSources() {
       const response = await updateDataSource({
         token,
         data_source_id: selectedSource.id,
-        file: fileToUpload,
+        ...finalPayload,
         refreshDashboards: shouldRefreshDashboards,
       });
 
@@ -347,6 +468,7 @@ export default function DataSources() {
       shouldRefreshDashboards: false,
       dashboardsToRefresh: [],
       fileToUpload: pendingUpdateFile,
+      payload: pendingUpdatePayload,
     });
   }
 
@@ -355,6 +477,7 @@ export default function DataSources() {
       shouldRefreshDashboards: true,
       dashboardsToRefresh: linkedDashboards,
       fileToUpload: pendingUpdateFile,
+      payload: pendingUpdatePayload,
     });
   }
 
@@ -409,6 +532,123 @@ export default function DataSources() {
   const isUpdatingSomething =
     loadingUpdate || loadingLinkedDashboards || loadingRefreshDashboards;
 
+  function renderSourceTypeFields({
+    currentSourceType,
+    onSourceTypeChange,
+    fileValue,
+    onFileChange,
+    apiUrlValue,
+    onApiUrlChange,
+    databaseUrlValue,
+    onDatabaseUrlChange,
+    databaseQueryValue,
+    onDatabaseQueryChange,
+    refreshIntervalValue,
+    onRefreshIntervalChange,
+    fileLabel,
+  }) {
+    const notice = getRefreshNotice(refreshIntervalValue);
+
+    return (
+      <>
+        <label className="settings-label">
+          Tipo de fonte
+          <div className="source-type-grid">
+            {SOURCE_TYPES.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <button
+                  type="button"
+                  key={item.value}
+                  className={currentSourceType === item.value ? "is-active" : ""}
+                  onClick={() => onSourceTypeChange(item.value)}
+                >
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </label>
+
+        {currentSourceType === "file" && (
+          <label className="settings-label">
+            {fileLabel}
+            <label className="custom-file-upload">
+              <input
+                type="file"
+                accept=".csv,.xlsx,.xls,.json"
+                onChange={(event) => onFileChange(event.target.files[0])}
+              />
+              <UploadCloud size={18} />
+              <span>{fileValue ? fileValue.name : "Selecionar arquivo"}</span>
+            </label>
+          </label>
+        )}
+
+        {currentSourceType === "web" && (
+          <>
+            <label className="settings-label">
+              URL da API
+              <input
+                value={apiUrlValue}
+                onChange={(event) => onApiUrlChange(event.target.value)}
+                placeholder="https://api.exemplo.com/dados"
+              />
+            </label>
+
+            <label className="settings-label">
+              Dias de atualizacao
+              <input
+                type="number"
+                min="1"
+                value={refreshIntervalValue}
+                onChange={(event) => onRefreshIntervalChange(event.target.value)}
+                placeholder="Ex: 7"
+              />
+            </label>
+          </>
+        )}
+
+        {currentSourceType === "database" && (
+          <>
+            <label className="settings-label">
+              URL de conexao do banco
+              <input
+                value={databaseUrlValue}
+                onChange={(event) => onDatabaseUrlChange(event.target.value)}
+                placeholder="postgresql://usuario:senha@host:5432/postgres"
+              />
+            </label>
+
+            <label className="settings-label">
+              Query SELECT
+              <textarea
+                value={databaseQueryValue}
+                onChange={(event) => onDatabaseQueryChange(event.target.value)}
+                placeholder="select * from public.vendas limit 5000"
+              />
+            </label>
+
+            <label className="settings-label">
+              Dias de atualizacao
+              <input
+                type="number"
+                min="1"
+                value={refreshIntervalValue}
+                onChange={(event) => onRefreshIntervalChange(event.target.value)}
+                placeholder="Ex: 7"
+              />
+            </label>
+          </>
+        )}
+
+        {notice && <p className="source-refresh-notice">{notice}</p>}
+      </>
+    );
+  }
+
   return (
     <AppLayout>
       <main className="data-sources-page">
@@ -431,7 +671,7 @@ export default function DataSources() {
             <button
               type="button"
               className="data-source-secondary-button"
-              onClick={() => setShowUpdateModal(true)}
+              onClick={openUpdateModal}
               disabled={!selectedSource}
             >
               <RefreshCcw size={18} />
@@ -483,7 +723,11 @@ export default function DataSources() {
 
                       <span>
                         <strong>{source.name}</strong>
-                        <small>{source.is_shared ? `Compartilhada por @${source.creator_username}` : source.file_name}</small>
+                        <small>
+                          {source.is_shared
+                            ? `Compartilhada por @${source.creator_username}`
+                            : `${getSourceTypeLabel(source.source_type)} - ${source.file_name}`}
+                        </small>
                       </span>
                   </button>
                 ))
@@ -506,7 +750,9 @@ export default function DataSources() {
                 <div className="data-source-details-card">
                   <div>
                     <h2>{selectedSource.name}</h2>
-                    <p>{selectedSource.file_name}</p>
+                    <p>
+                      {getSourceTypeLabel(selectedSource.source_type)} - {selectedSource.file_name}
+                    </p>
                   </div>
 
                   {!selectedSource.is_shared && (
@@ -535,6 +781,14 @@ export default function DataSources() {
                   <div>
                     <span>Arquivo</span>
                     <strong>{selectedSource.file_name}</strong>
+                  </div>
+                  <div>
+                    <span>Atualizacao</span>
+                    <strong>
+                      {selectedSource.refresh_interval_days
+                        ? `${selectedSource.refresh_interval_days} dia${Number(selectedSource.refresh_interval_days) === 1 ? "" : "s"}`
+                        : "Manual"}
+                    </strong>
                   </div>
                 </div>
 
@@ -608,7 +862,7 @@ export default function DataSources() {
               </div>
 
               <h2>Adicionar fonte</h2>
-              <p>Escolha um nome e envie uma planilha para salvar como fonte.</p>
+              <p>Escolha um nome e conecte arquivo, API externa ou banco.</p>
 
               <label className="settings-label">
                 Nome da fonte
@@ -620,20 +874,21 @@ export default function DataSources() {
                 />
               </label>
 
-              <label className="settings-label">
-                Arquivo
-                <label className="custom-file-upload">
-                  <input
-                    type="file"
-                    accept=".csv,.xlsx,.xls,.json"
-                    onChange={(event) => setSourceFile(event.target.files[0])}
-                  />
-                  <UploadCloud size={18} />
-                  <span>
-                    {sourceFile ? sourceFile.name : "Selecionar arquivo"}
-                  </span>
-                </label>
-              </label>
+              {renderSourceTypeFields({
+                currentSourceType: sourceType,
+                onSourceTypeChange: setSourceType,
+                fileValue: sourceFile,
+                onFileChange: setSourceFile,
+                apiUrlValue: apiUrl,
+                onApiUrlChange: setApiUrl,
+                databaseUrlValue: databaseUrl,
+                onDatabaseUrlChange: setDatabaseUrl,
+                databaseQueryValue: databaseQuery,
+                onDatabaseQueryChange: setDatabaseQuery,
+                refreshIntervalValue: refreshIntervalDays,
+                onRefreshIntervalChange: setRefreshIntervalDays,
+                fileLabel: "Arquivo",
+              })}
 
               <div className="modal-actions">
                 <button
@@ -670,24 +925,25 @@ export default function DataSources() {
               <h2>Atualizar fonte</h2>
 
               <p>
-                Envie uma nova planilha para substituir os dados de{" "}
+                Altere os dados de conexao para substituir os dados de{" "}
                 <strong>{selectedSource?.name}</strong>.
               </p>
 
-              <label className="settings-label">
-                Nova planilha
-                <label className="custom-file-upload">
-                  <input
-                    type="file"
-                    accept=".csv,.xlsx,.xls,.json"
-                    onChange={(event) => setUpdateFile(event.target.files[0])}
-                  />
-                  <UploadCloud size={18} />
-                  <span>
-                    {updateFile ? updateFile.name : "Selecionar arquivo"}
-                  </span>
-                </label>
-              </label>
+              {renderSourceTypeFields({
+                currentSourceType: updateSourceType,
+                onSourceTypeChange: setUpdateSourceType,
+                fileValue: updateFile,
+                onFileChange: setUpdateFile,
+                apiUrlValue: updateApiUrl,
+                onApiUrlChange: setUpdateApiUrl,
+                databaseUrlValue: updateDatabaseUrl,
+                onDatabaseUrlChange: setUpdateDatabaseUrl,
+                databaseQueryValue: updateDatabaseQuery,
+                onDatabaseQueryChange: setUpdateDatabaseQuery,
+                refreshIntervalValue: updateRefreshIntervalDays,
+                onRefreshIntervalChange: setUpdateRefreshIntervalDays,
+                fileLabel: "Nova planilha",
+              })}
 
               <div className="modal-actions">
                 <button

@@ -93,6 +93,7 @@ export async function generateDashboard({
   title,
   prompt,
   data_source_id,
+  onStatus,
 }) {
   const formData = new FormData();
 
@@ -100,6 +101,66 @@ export async function generateDashboard({
   formData.append("title", title);
   formData.append("prompt", prompt || "");
   formData.append("data_source_id", String(data_source_id));
+
+  if (onStatus && typeof ReadableStream !== "undefined") {
+    const response = await fetch(`${AI_URL}/dashboard/analyze/stream`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok || !response.body) {
+      return normalizeChartsPayload(
+        await parseResponse(response, "Erro ao gerar dashboard.")
+      );
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let finalData = null;
+
+    while (true) {
+      const { value, done } = await reader.read();
+
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        const event = JSON.parse(line);
+
+        if (event.type === "status") {
+          onStatus(event.message);
+        }
+
+        if (event.type === "error") {
+          throw new Error(event.message || "Erro ao gerar dashboard.");
+        }
+
+        if (event.type === "complete") {
+          finalData = event.data;
+        }
+      }
+    }
+
+    if (buffer.trim()) {
+      const event = JSON.parse(buffer);
+
+      if (event.type === "complete") {
+        finalData = event.data;
+      }
+    }
+
+    if (!finalData) {
+      throw new Error("A geração terminou sem retornar o dashboard.");
+    }
+
+    return normalizeChartsPayload(finalData);
+  }
 
   const data = await safeFetch(
     `${AI_URL}/dashboard/analyze`,

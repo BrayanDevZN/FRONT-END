@@ -179,7 +179,16 @@ export default function SidebarWithDataSources() {
   async function loadNotifications() {
     try {
       const response = await getNotifications(getToken());
-      setNotifications(response?.notifications || []);
+      const nextNotifications = response?.notifications || [];
+      setNotifications(nextNotifications);
+      window.dispatchEvent(
+        new CustomEvent("notifications-loaded", {
+          detail: {
+            unreadCount: nextNotifications.filter((item) => !item.is_read)
+              .length,
+          },
+        })
+      );
     } catch (err) {
       console.error("Erro ao carregar notificações:", err);
     }
@@ -190,6 +199,20 @@ export default function SidebarWithDataSources() {
     const unread = notifications.filter((item) => !item.is_read);
     await Promise.all(unread.map((item) => markNotificationRead(getToken(), item.id)));
     setNotifications((current) => current.map((item) => ({ ...item, is_read: true })));
+    window.dispatchEvent(
+      new CustomEvent("notifications-loaded", { detail: { unreadCount: 0 } })
+    );
+  }
+
+  function openNotificationTarget(notification) {
+    setShowNotifications(false);
+
+    if (notification?.dashboard_id) {
+      navigate(`/collaborations?dashboard_id=${notification.dashboard_id}`);
+      return;
+    }
+
+    navigate("/collaborations");
   }
 
   function openNewChatModal() {
@@ -513,6 +536,10 @@ export default function SidebarWithDataSources() {
       openNewDashboardModal();
     }
 
+    function handleOpenNotifications() {
+      openNotifications();
+    }
+
     function handleCollaborationsUpdated() {
       loadDashboards();
       loadNotifications();
@@ -520,6 +547,7 @@ export default function SidebarWithDataSources() {
 
     window.addEventListener("open-chat-modal", handleOpenChatModal);
     window.addEventListener("open-dashboard-modal", handleOpenDashboardModal);
+    window.addEventListener("open-notifications-modal", handleOpenNotifications);
     window.addEventListener("collaborations-updated", handleCollaborationsUpdated);
 
     return () => {
@@ -528,9 +556,10 @@ export default function SidebarWithDataSources() {
         "open-dashboard-modal",
         handleOpenDashboardModal
       );
+      window.removeEventListener("open-notifications-modal", handleOpenNotifications);
       window.removeEventListener("collaborations-updated", handleCollaborationsUpdated);
     };
-  }, []);
+  }, [notifications]);
 
   useEffect(() => {
     function handleClosePopover() {
@@ -565,12 +594,6 @@ export default function SidebarWithDataSources() {
                 <img src="/datapilot-logo-light.svg" alt="DataPilot AI" />
               )}
             </button>
-            {!collapsed && (
-              <button type="button" className="sidebar-notification-button" onClick={openNotifications} title="Notificações">
-                <Bell size={19} />
-                {notifications.some((item) => !item.is_read) && <span>{notifications.filter((item) => !item.is_read).length}</span>}
-              </button>
-            )}
           </div>
 
           <nav className="sidebar-main-nav" aria-label="Navegação principal">
@@ -829,7 +852,17 @@ export default function SidebarWithDataSources() {
             <h2>Notificações</h2>
             {notifications.length === 0 ? <p>Nenhuma notificação ainda.</p> : (
               <div className="notification-list">
-                {notifications.map((item) => <div key={item.id} className="notification-item"><Bell size={16} /><span>{item.message}</span></div>)}
+                {notifications.map((item) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    className="notification-item"
+                    onClick={() => openNotificationTarget(item)}
+                  >
+                    <Bell size={18} />
+                    <span>{item.message}</span>
+                  </button>
+                ))}
               </div>
             )}
             <button type="button" className="modal-confirm" onClick={() => setShowNotifications(false)}>Fechar</button>

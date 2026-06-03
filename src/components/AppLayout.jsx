@@ -4,6 +4,7 @@ import {
   Search,
   Plus,
   BarChart3,
+  Bell,
   MessageSquareText,
 } from "lucide-react";
 
@@ -116,6 +117,7 @@ export default function AppLayout({
   const [dashboards, setDashboards] = useState([]);
   const [conversations, setConversations] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   async function loadSearchData() {
     try {
@@ -148,6 +150,21 @@ export default function AppLayout({
       loadSearchData();
     }
   }, [location.pathname, hideTopbar]);
+
+  useEffect(() => {
+    function handleNotificationsLoaded(event) {
+      setUnreadNotifications(event.detail?.unreadCount || 0);
+    }
+
+    window.addEventListener("notifications-loaded", handleNotificationsLoaded);
+
+    return () => {
+      window.removeEventListener(
+        "notifications-loaded",
+        handleNotificationsLoaded
+      );
+    };
+  }, []);
 
   const searchResults = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -329,6 +346,23 @@ export default function AppLayout({
               </div>
 
               <div className="topbar-cta-group">
+                <button
+                  type="button"
+                  className="topbar-notification-button"
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new Event("open-notifications-modal")
+                    )
+                  }
+                  title="Notificações"
+                  aria-label="Abrir notificações"
+                >
+                  <Bell size={22} strokeWidth={2.4} />
+                  {unreadNotifications > 0 && (
+                    <span>{unreadNotifications}</span>
+                  )}
+                </button>
+
                 <button
                   type="button"
                   className="topbar-cta topbar-cta-secondary"
