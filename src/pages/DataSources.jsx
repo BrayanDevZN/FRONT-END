@@ -35,6 +35,53 @@ const SOURCE_TYPES = [
   { value: "database", label: "Banco de dados", icon: Server },
 ];
 
+const DEFAULT_DATABASE_CONNECTION = {
+  dialect: "postgresql",
+  host: "",
+  port: "5432",
+  database: "",
+  username: "",
+  password: "",
+};
+
+function createDefaultDatabaseConnection() {
+  return { ...DEFAULT_DATABASE_CONNECTION };
+}
+
+function parseDatabaseUrl(databaseUrl = "") {
+  if (!databaseUrl) return createDefaultDatabaseConnection();
+
+  try {
+    const parsedUrl = new URL(databaseUrl);
+    const protocol = parsedUrl.protocol.replace(":", "") || "postgresql";
+
+    return {
+      dialect: protocol === "postgres" ? "postgresql" : protocol,
+      host: parsedUrl.hostname || "",
+      port: parsedUrl.port || (protocol.includes("postgres") ? "5432" : ""),
+      database: decodeURIComponent(parsedUrl.pathname.replace(/^\//, "")),
+      username: decodeURIComponent(parsedUrl.username || ""),
+      password: decodeURIComponent(parsedUrl.password || ""),
+    };
+  } catch {
+    return createDefaultDatabaseConnection();
+  }
+}
+
+function buildDatabaseUrl(config) {
+  const dialect = config.dialect || "postgresql";
+  const auth =
+    config.username || config.password
+      ? `${encodeURIComponent(config.username)}:${encodeURIComponent(config.password)}@`
+      : "";
+  const port = config.port ? `:${config.port}` : "";
+  const database = config.database
+    ? `/${encodeURIComponent(config.database)}`
+    : "";
+
+  return `${dialect}://${auth}${config.host}${port}${database}`;
+}
+
 export default function DataSources() {
   const [dataSources, setDataSources] = useState([]);
   const [selectedSource, setSelectedSource] = useState(null);
@@ -48,13 +95,17 @@ export default function DataSources() {
   const [sourceType, setSourceType] = useState("file");
   const [sourceFile, setSourceFile] = useState(null);
   const [apiUrl, setApiUrl] = useState("");
-  const [databaseUrl, setDatabaseUrl] = useState("");
+  const [databaseConnection, setDatabaseConnection] = useState(
+    createDefaultDatabaseConnection
+  );
   const [databaseQuery, setDatabaseQuery] = useState("");
   const [refreshIntervalDays, setRefreshIntervalDays] = useState("");
   const [updateSourceType, setUpdateSourceType] = useState("file");
   const [updateFile, setUpdateFile] = useState(null);
   const [updateApiUrl, setUpdateApiUrl] = useState("");
-  const [updateDatabaseUrl, setUpdateDatabaseUrl] = useState("");
+  const [updateDatabaseConnection, setUpdateDatabaseConnection] = useState(
+    createDefaultDatabaseConnection
+  );
   const [updateDatabaseQuery, setUpdateDatabaseQuery] = useState("");
   const [updateRefreshIntervalDays, setUpdateRefreshIntervalDays] = useState("");
   const [pendingUpdateFile, setPendingUpdateFile] = useState(null);
@@ -72,7 +123,7 @@ export default function DataSources() {
 
   const [error, setError] = useState("");
 
-  async function loadDataSources() {
+  async function loadDataSources({ silentFetchFailure = false } = {}) {
     try {
       setLoadingList(true);
       setError("");
@@ -89,6 +140,12 @@ export default function DataSources() {
       }
     } catch (err) {
       const message = err.message || "Erro ao buscar fontes de dados.";
+
+      if (silentFetchFailure || isLikelyFetchFailure(err)) {
+        console.warn("Fontes indisponiveis no carregamento inicial:", err);
+        return;
+      }
+
       setError(message);
       toast.error(message);
     } finally {
@@ -122,6 +179,34 @@ export default function DataSources() {
     return sources.find(matchFn) || null;
   }
 
+  function addOrReplaceDataSource(source) {
+    if (!source?.id) return;
+
+    setDataSources((currentSources) => {
+      const exists = currentSources.some(
+        (currentSource) => Number(currentSource.id) === Number(source.id)
+      );
+
+      if (exists) {
+        return currentSources.map((currentSource) =>
+          Number(currentSource.id) === Number(source.id)
+            ? { ...currentSource, ...source }
+            : currentSource
+        );
+      }
+
+      return [source, ...currentSources];
+    });
+  }
+
+  async function reloadDataSourcesQuietly() {
+    try {
+      await loadDataSources({ silentFetchFailure: true });
+    } catch (err) {
+      console.warn("Nao foi possivel recarregar fontes em segundo plano:", err);
+    }
+  }
+
   function isLikelyFetchFailure(error) {
     const message = String(error?.message || "").toLowerCase();
 
@@ -137,10 +222,39 @@ export default function DataSources() {
     return SOURCE_TYPES.find((item) => item.value === value)?.label || "Arquivo";
   }
 
+  function getSourceDescription(source) {
+    const label = getSourceTypeLabel(source?.source_type);
+    const config = source?.connection_config || {};
+
+    if (source?.source_type === "web") {
+      return `${label} - ${config.url || source.file_name || "API externa"}`;
+    }
+
+    if (source?.source_type === "database") {
+      return `${label} - ${config.database_url ? "conexao configurada" : "Banco de dados"}`;
+    }
+
+    return `${label} - ${source?.file_name || "Arquivo"}`;
+  }
+
   function getRefreshNotice(days) {
     if (!days) return "";
 
     return `A cada ${days} dia${Number(days) === 1 ? "" : "s"}, esta fonte sera consultada de novo. Quando isso acontecer, os dashboards ligados serao reconstruidos automaticamente com o prompt salvo.`;
+  }
+
+  function updateDatabaseConnectionField(field, value) {
+    setDatabaseConnection((currentValue) => ({
+      ...currentValue,
+      [field]: value,
+    }));
+  }
+
+  function updateUpdateDatabaseConnectionField(field, value) {
+    setUpdateDatabaseConnection((currentValue) => ({
+      ...currentValue,
+      [field]: value,
+    }));
   }
 
   function buildCreatePayload() {
@@ -148,7 +262,7 @@ export default function DataSources() {
       sourceType,
       file: sourceFile,
       apiUrl,
-      databaseUrl,
+      databaseUrl: buildDatabaseUrl(databaseConnection),
       query: databaseQuery,
       refreshIntervalDays,
     };
@@ -159,13 +273,13 @@ export default function DataSources() {
       sourceType: updateSourceType,
       file: updateFile,
       apiUrl: updateApiUrl,
-      databaseUrl: updateDatabaseUrl,
+      databaseUrl: buildDatabaseUrl(updateDatabaseConnection),
       query: updateDatabaseQuery,
       refreshIntervalDays: updateRefreshIntervalDays,
     };
   }
 
-  function validateSourcePayload(payload, fileMessage) {
+  function validateSourcePayload(payload, fileMessage, databaseConfig) {
     if (payload.sourceType === "file" && !payload.file) {
       toast.error(fileMessage);
       return false;
@@ -177,8 +291,25 @@ export default function DataSources() {
     }
 
     if (payload.sourceType === "database") {
-      if (!payload.databaseUrl.trim()) {
-        toast.error("Digite a URL de conexao do banco.");
+      const config = databaseConfig || createDefaultDatabaseConnection();
+
+      if (!config.host.trim()) {
+        toast.error("Digite o host do banco.");
+        return false;
+      }
+
+      if (!config.port.trim()) {
+        toast.error("Digite a porta do banco.");
+        return false;
+      }
+
+      if (!config.database.trim()) {
+        toast.error("Digite o nome do banco.");
+        return false;
+      }
+
+      if (!config.username.trim()) {
+        toast.error("Digite o usuario do banco.");
         return false;
       }
 
@@ -226,7 +357,7 @@ export default function DataSources() {
     setSourceType("file");
     setSourceFile(null);
     setApiUrl("");
-    setDatabaseUrl("");
+    setDatabaseConnection(createDefaultDatabaseConnection());
     setDatabaseQuery("");
     setRefreshIntervalDays("");
     setShowCreateModal(false);
@@ -241,7 +372,7 @@ export default function DataSources() {
     setUpdateSourceType(nextType);
     setUpdateFile(null);
     setUpdateApiUrl(config.url || "");
-    setUpdateDatabaseUrl(config.database_url || "");
+    setUpdateDatabaseConnection(parseDatabaseUrl(config.database_url || ""));
     setUpdateDatabaseQuery(config.query || "");
     setUpdateRefreshIntervalDays(selectedSource.refresh_interval_days || "");
     setShowUpdateModal(true);
@@ -263,7 +394,13 @@ export default function DataSources() {
 
     const sourcePayload = buildCreatePayload();
 
-    if (!validateSourcePayload(sourcePayload, "Selecione um arquivo.")) {
+    if (
+      !validateSourcePayload(
+        sourcePayload,
+        "Selecione um arquivo.",
+        databaseConnection
+      )
+    ) {
       return;
     }
 
@@ -283,13 +420,13 @@ export default function DataSources() {
 
       toast.success("Fonte de dados criada com sucesso.");
 
-      closeCreateModal();
-
-      await loadDataSources();
-
-      if (createdSource?.id) {
-        await openDataSource(createdSource.id);
+      if (createdSource) {
+        addOrReplaceDataSource(createdSource);
+        setSelectedSource(createdSource);
       }
+
+      closeCreateModal();
+      reloadDataSourcesQuietly();
     } catch (err) {
       try {
         const createdSource = await refreshDataSourcesAndFind(
@@ -332,7 +469,13 @@ export default function DataSources() {
 
     const updatePayload = buildUpdatePayload();
 
-    if (!validateSourcePayload(updatePayload, "Selecione a nova planilha.")) {
+    if (
+      !validateSourcePayload(
+        updatePayload,
+        "Selecione a nova planilha.",
+        updateDatabaseConnection
+      )
+    ) {
       return;
     }
 
@@ -389,7 +532,13 @@ export default function DataSources() {
       file: fileToUpload,
     };
 
-    if (!validateSourcePayload(finalPayload, "Selecione a nova planilha.")) {
+    if (
+      !validateSourcePayload(
+        finalPayload,
+        "Selecione a nova planilha.",
+        updateDatabaseConnection
+      )
+    ) {
       return;
     }
 
@@ -539,8 +688,8 @@ export default function DataSources() {
     onFileChange,
     apiUrlValue,
     onApiUrlChange,
-    databaseUrlValue,
-    onDatabaseUrlChange,
+    databaseConnectionValue,
+    onDatabaseConnectionChange,
     databaseQueryValue,
     onDatabaseQueryChange,
     refreshIntervalValue,
@@ -614,11 +763,74 @@ export default function DataSources() {
         {currentSourceType === "database" && (
           <>
             <label className="settings-label">
-              URL de conexao do banco
+              Tipo do banco
+              <select
+                value={databaseConnectionValue.dialect}
+                onChange={(event) =>
+                  onDatabaseConnectionChange("dialect", event.target.value)
+                }
+              >
+                <option value="postgresql">PostgreSQL</option>
+              </select>
+            </label>
+
+            <div className="database-fields-grid">
+              <label className="settings-label">
+                Host
+                <input
+                  value={databaseConnectionValue.host}
+                  onChange={(event) =>
+                    onDatabaseConnectionChange("host", event.target.value)
+                  }
+                  placeholder="localhost ou db.exemplo.com"
+                />
+              </label>
+
+              <label className="settings-label">
+                Porta
+                <input
+                  type="number"
+                  min="1"
+                  value={databaseConnectionValue.port}
+                  onChange={(event) =>
+                    onDatabaseConnectionChange("port", event.target.value)
+                  }
+                  placeholder="5432"
+                />
+              </label>
+
+              <label className="settings-label">
+                Banco
+                <input
+                  value={databaseConnectionValue.database}
+                  onChange={(event) =>
+                    onDatabaseConnectionChange("database", event.target.value)
+                  }
+                  placeholder="postgres"
+                />
+              </label>
+
+              <label className="settings-label">
+                Usuario
+                <input
+                  value={databaseConnectionValue.username}
+                  onChange={(event) =>
+                    onDatabaseConnectionChange("username", event.target.value)
+                  }
+                  placeholder="postgres"
+                />
+              </label>
+            </div>
+
+            <label className="settings-label">
+              Senha
               <input
-                value={databaseUrlValue}
-                onChange={(event) => onDatabaseUrlChange(event.target.value)}
-                placeholder="postgresql://usuario:senha@host:5432/postgres"
+                type="password"
+                value={databaseConnectionValue.password}
+                onChange={(event) =>
+                  onDatabaseConnectionChange("password", event.target.value)
+                }
+                placeholder="Senha do banco"
               />
             </label>
 
@@ -726,7 +938,7 @@ export default function DataSources() {
                         <small>
                           {source.is_shared
                             ? `Compartilhada por @${source.creator_username}`
-                            : `${getSourceTypeLabel(source.source_type)} - ${source.file_name}`}
+                            : getSourceDescription(source)}
                         </small>
                       </span>
                   </button>
@@ -751,7 +963,7 @@ export default function DataSources() {
                   <div>
                     <h2>{selectedSource.name}</h2>
                     <p>
-                      {getSourceTypeLabel(selectedSource.source_type)} - {selectedSource.file_name}
+                      {getSourceDescription(selectedSource)}
                     </p>
                   </div>
 
@@ -780,7 +992,7 @@ export default function DataSources() {
 
                   <div>
                     <span>Arquivo</span>
-                    <strong>{selectedSource.file_name}</strong>
+                    <strong>{selectedSource.file_name || getSourceTypeLabel(selectedSource.source_type)}</strong>
                   </div>
                   <div>
                     <span>Atualizacao</span>
@@ -881,8 +1093,8 @@ export default function DataSources() {
                 onFileChange: setSourceFile,
                 apiUrlValue: apiUrl,
                 onApiUrlChange: setApiUrl,
-                databaseUrlValue: databaseUrl,
-                onDatabaseUrlChange: setDatabaseUrl,
+                databaseConnectionValue: databaseConnection,
+                onDatabaseConnectionChange: updateDatabaseConnectionField,
                 databaseQueryValue: databaseQuery,
                 onDatabaseQueryChange: setDatabaseQuery,
                 refreshIntervalValue: refreshIntervalDays,
@@ -936,8 +1148,8 @@ export default function DataSources() {
                 onFileChange: setUpdateFile,
                 apiUrlValue: updateApiUrl,
                 onApiUrlChange: setUpdateApiUrl,
-                databaseUrlValue: updateDatabaseUrl,
-                onDatabaseUrlChange: setUpdateDatabaseUrl,
+                databaseConnectionValue: updateDatabaseConnection,
+                onDatabaseConnectionChange: updateUpdateDatabaseConnectionField,
                 databaseQueryValue: updateDatabaseQuery,
                 onDatabaseQueryChange: setUpdateDatabaseQuery,
                 refreshIntervalValue: updateRefreshIntervalDays,

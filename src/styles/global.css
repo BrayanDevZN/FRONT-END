@@ -287,8 +287,10 @@ a:hover {
 .input-group input,
 .input-group select,
 .settings-label input,
+.settings-label select,
 .settings-label textarea,
 .modal-card input,
+.modal-card select,
 .modal-card textarea {
   width: 100%;
   border: 1px solid #cfd8e6;
@@ -303,8 +305,10 @@ a:hover {
 .input-group input:focus,
 .input-group select:focus,
 .settings-label input:focus,
+.settings-label select:focus,
 .settings-label textarea:focus,
 .modal-card input:focus,
+.modal-card select:focus,
 .modal-card textarea:focus {
   border-color: var(--primary);
   background: #fff;
@@ -4920,6 +4924,17 @@ a:hover {
   color: #1d4ed8;
 }
 
+.database-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 12px;
+}
+
+.database-fields-grid .settings-label:nth-child(3),
+.database-fields-grid .settings-label:nth-child(4) {
+  grid-column: span 1;
+}
+
 .source-refresh-notice {
   margin: 0;
   border: 1px solid #bfdbfe;
@@ -5093,6 +5108,21 @@ a:hover {
   background: #ffffff;
   color: #2563eb;
   border: 1px solid #bfdbfe;
+  box-shadow: none;
+}
+
+.home-hero-actions .home-notification-button {
+  display: inline-grid;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  flex: 0 0 auto;
+  place-items: center;
+  gap: 0;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #2563eb;
   box-shadow: none;
 }
 

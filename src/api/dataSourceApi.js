@@ -48,6 +48,7 @@ export async function createDataSource({
   sourceType = "file",
   file,
   apiUrl,
+  apiPayload,
   databaseUrl,
   query,
   refreshIntervalDays,
@@ -68,6 +69,10 @@ export async function createDataSource({
 
   if (sourceType === "web") {
     formData.append("api_url", apiUrl || "");
+
+    if (apiPayload !== undefined) {
+      formData.append("api_payload", JSON.stringify(apiPayload));
+    }
   }
 
   if (sourceType === "database") {
@@ -139,6 +144,7 @@ export async function updateDataSource({
   sourceType,
   file,
   apiUrl,
+  apiPayload,
   databaseUrl,
   query,
   refreshIntervalDays,
@@ -164,6 +170,10 @@ export async function updateDataSource({
 
   if (apiUrl !== undefined) {
     formData.append("api_url", apiUrl || "");
+  }
+
+  if (apiPayload !== undefined) {
+    formData.append("api_payload", JSON.stringify(apiPayload));
   }
 
   if (databaseUrl !== undefined) {
