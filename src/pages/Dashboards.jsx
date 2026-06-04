@@ -171,23 +171,6 @@ export default function Dashboards() {
     }
   }
 
-  async function refreshDashboardList() {
-    const token = getToken();
-    const response = await getDashboards(token);
-    const dashboardList = response?.dashboards || [];
-
-    setDashboards(dashboardList);
-
-    return dashboardList;
-  }
-
-  async function verifyDashboardRefreshed(dashboardId) {
-    await new Promise((resolve) => setTimeout(resolve, 4000));
-
-    await refreshDashboardList();
-    await openDashboard(dashboardId);
-  }
-
   function getChartId(chart, index) {
     return String(chart?.id || chart?.chart_id || `chart_${index}`);
   }
@@ -452,34 +435,8 @@ export default function Dashboards() {
     } catch (err) {
       console.error("Erro ao atualizar dashboard:", err);
 
-      const dashboardId = selectedDashboard.id;
-
-      setError("A atualização está demorando. Verificando se o dashboard foi atualizado...");
-      toast.loading("Verificando atualização do dashboard...", {
-        id: "refresh-dashboard-check",
-      });
-
-      try {
-        await verifyDashboardRefreshed(dashboardId);
-
-        setError("");
-        toast.success("Dashboard atualizado com sucesso.", {
-          id: "refresh-dashboard-check",
-        });
-
-        return;
-      } catch (refreshError) {
-        console.error("Erro ao verificar atualização do dashboard:", refreshError);
-      }
-
-      toast.error(
-        "A atualização pode ter sido concluída. Atualize a página ou abra o dashboard novamente.",
-        { id: "refresh-dashboard-check" }
-      );
-
-      setError(
-        "A atualização pode ter sido concluída. Atualize a página ou abra o dashboard novamente."
-      );
+      setError(err.message || "Erro ao atualizar dashboard.");
+      toast.error(err.message || "Erro ao atualizar dashboard.");
     } finally {
       setRefreshingDashboard(false);
     }
@@ -569,21 +526,22 @@ export default function Dashboards() {
         onStatus: setGenerationStatus,
       });
 
-      const dashboard = {
-        ...response.dashboard,
-        title: title.trim(),
-        charts: response.charts || response.dashboard?.charts || [],
-        ai_suggestion: response.ai_suggestion || response.dashboard?.ai_suggestion || "",
-      };
+      const createdDashboardId = response?.dashboard?.id || response?.id;
 
-      setSelectedDashboard(dashboard);
+      if (!createdDashboardId) {
+        throw new Error("A API respondeu, mas nao retornou o dashboard criado.");
+      }
+
+      setGenerationStatus("Abrindo dashboard gerado.");
+
+      await loadDashboards();
+      await openDashboard(createdDashboardId);
+
       setShowCreate(false);
       setTitle("");
       setPrompt("");
       setSelectedDataSourceId("");
       setGenerationStatus("");
-
-      await loadDashboards();
     } catch (err) {
       console.error("Erro ao gerar dashboard:", err);
 

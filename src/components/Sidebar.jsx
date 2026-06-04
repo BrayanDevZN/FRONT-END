@@ -342,7 +342,11 @@ export default function SidebarWithDataSources() {
         data_source_id: Number(selectedDataSourceId),
       });
 
-      const createdDashboard = response?.dashboard;
+      const createdDashboardId = response?.dashboard?.id || response?.id;
+
+      if (!createdDashboardId) {
+        throw new Error("A API respondeu, mas nao retornou o dashboard criado.");
+      }
 
       await loadDashboards();
 
@@ -351,11 +355,7 @@ export default function SidebarWithDataSources() {
       setSelectedDataSourceId("");
       setShowNewDashboardModal(false);
 
-      if (createdDashboard?.id) {
-        goToDashboard(createdDashboard.id);
-      } else {
-        navigate("/dashboards");
-      }
+      goToDashboard(createdDashboardId);
     } catch (err) {
       console.error("Erro ao criar dashboard:", err);
 
