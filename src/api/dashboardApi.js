@@ -95,17 +95,34 @@ export async function generateDashboard({
   data_source_id,
   onStatus,
 }) {
-  const formData = new FormData();
+  function buildFormData() {
+    const formData = new FormData();
 
-  formData.append("token", token);
-  formData.append("title", title);
-  formData.append("prompt", prompt || "");
-  formData.append("data_source_id", String(data_source_id));
+    formData.append("token", token);
+    formData.append("title", title);
+    formData.append("prompt", prompt || "");
+    formData.append("data_source_id", String(data_source_id));
+
+    return formData;
+  }
+
+  async function generateWithStandardRequest() {
+    const data = await safeFetch(
+      `${AI_URL}/dashboard/analyze`,
+      {
+        method: "POST",
+        body: buildFormData(),
+      },
+      "Erro ao gerar dashboard."
+    );
+
+    return normalizeChartsPayload(data);
+  }
 
   if (onStatus && typeof ReadableStream !== "undefined") {
     const response = await fetch(`${AI_URL}/dashboard/analyze/stream`, {
       method: "POST",
-      body: formData,
+      body: buildFormData(),
     });
 
     if (!response.ok || !response.body) {
@@ -156,22 +173,14 @@ export async function generateDashboard({
     }
 
     if (!finalData) {
-      throw new Error("A geração terminou sem retornar o dashboard.");
+      onStatus("Finalizando pela rota principal.");
+      return await generateWithStandardRequest();
     }
 
     return normalizeChartsPayload(finalData);
   }
 
-  const data = await safeFetch(
-    `${AI_URL}/dashboard/analyze`,
-    {
-      method: "POST",
-      body: formData,
-    },
-    "Erro ao gerar dashboard."
-  );
-
-  return normalizeChartsPayload(data);
+  return await generateWithStandardRequest();
 }
 
 export async function refreshDashboard({

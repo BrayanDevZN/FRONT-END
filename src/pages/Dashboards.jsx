@@ -181,31 +181,6 @@ export default function Dashboards() {
     return dashboardList;
   }
 
-  function findDashboardByTitle(dashboardList, wantedTitle) {
-    const normalizedWantedTitle = String(wantedTitle || "")
-      .trim()
-      .toLowerCase();
-
-    return dashboardList.find(
-      (dashboard) =>
-        dashboard.title?.trim().toLowerCase() === normalizedWantedTitle
-    );
-  }
-
-  async function verifyDashboardCreatedByTitle(wantedTitle) {
-    await new Promise((resolve) => setTimeout(resolve, 4000));
-
-    const dashboardList = await refreshDashboardList();
-    const createdDashboard = findDashboardByTitle(dashboardList, wantedTitle);
-
-    if (createdDashboard?.id) {
-      await openDashboard(createdDashboard.id);
-      return createdDashboard;
-    }
-
-    return null;
-  }
-
   async function verifyDashboardRefreshed(dashboardId) {
     await new Promise((resolve) => setTimeout(resolve, 4000));
 
@@ -577,7 +552,6 @@ export default function Dashboards() {
     event.preventDefault();
 
     if (!title.trim()) return setError("Digite o nome do dashboard.");
-    if (!prompt.trim()) return setError("Digite o prompt da análise.");
     if (!selectedDataSourceId) return setError("Escolha uma fonte de dados.");
 
     setLoading(true);
@@ -613,29 +587,8 @@ export default function Dashboards() {
     } catch (err) {
       console.error("Erro ao gerar dashboard:", err);
 
-      setError("A análise está demorando. Verificando se o dashboard foi criado...");
-
-      try {
-        const createdDashboard = await verifyDashboardCreatedByTitle(title.trim());
-
-        if (createdDashboard?.id) {
-          setShowCreate(false);
-          setTitle("");
-          setPrompt("");
-          setSelectedDataSourceId("");
-          setGenerationStatus("");
-          setError("");
-
-          toast.success("Dashboard criado com sucesso.");
-          return;
-        }
-      } catch (refreshError) {
-        console.error("Erro ao verificar dashboard criado:", refreshError);
-      }
-
-      setError(
-        "A análise pode ter sido concluída. Atualize a página ou confira a lista de dashboards."
-      );
+      setError(err.message || "Erro ao gerar dashboard.");
+      toast.error(err.message || "Erro ao gerar dashboard.");
     } finally {
       setLoading(false);
       setGenerationStatus("");

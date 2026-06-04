@@ -359,44 +359,7 @@ export default function SidebarWithDataSources() {
     } catch (err) {
       console.error("Erro ao criar dashboard:", err);
 
-      setModalError(
-        "A análise está demorando. Verificando se o dashboard foi criado..."
-      );
-
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 4000));
-
-        const token = getToken();
-
-        if (token) {
-          const response = await getDashboards(token);
-          const updatedDashboards = response?.dashboards || [];
-
-          setDashboards(updatedDashboards);
-
-          const createdDashboard = updatedDashboards.find(
-            (dashboard) =>
-              dashboard.title?.trim().toLowerCase() === title.toLowerCase()
-          );
-
-          if (createdDashboard?.id) {
-            setDashboardTitle("");
-            setDashboardPrompt("");
-            setSelectedDataSourceId("");
-            setShowNewDashboardModal(false);
-            setModalError("");
-
-            goToDashboard(createdDashboard.id);
-            return;
-          }
-        }
-      } catch (refreshError) {
-        console.error("Erro ao verificar dashboard criado:", refreshError);
-      }
-
-      setModalError(
-        "A análise pode ter sido concluída. Atualize a página ou confira a lista de dashboards."
-      );
+      setModalError(err.message || "Erro ao criar dashboard.");
     } finally {
       setLoading(false);
     }
