@@ -45,6 +45,7 @@ const DRILLABLE_CHART_TYPES = new Set([
   "area",
   "pie",
   "donut",
+  "scatter",
 ]);
 
 export function normalizeDrillKey(value) {

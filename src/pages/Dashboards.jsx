@@ -1320,19 +1320,31 @@ export default function Dashboards() {
 
     if (chartType === "scatter") {
       return (
-        <div className="chart-scroll">
-          <div style={chartWrapperStyle}>
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 24, right: 55, left: 34, bottom: 96 }}>
-                {renderGrid(settings)}
-                {renderXAxis(activeXKey, settings)}
-                {renderYAxis(activeYKey, settings, true)}
-                <Tooltip content={<CustomTooltip />} />
-                <Scatter data={chartData} fill={settings.chartColor} name={activeYKey} />
-              </ScatterChart>
-            </ResponsiveContainer>
+        <>
+          {drillControls}
+          <div className="chart-scroll">
+            <div style={chartWrapperStyle}>
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart
+                  margin={{ top: 24, right: 55, left: 34, bottom: 96 }}
+                  onClick={(event) => handleDrillClick(event?.activePayload?.[0]?.payload)}
+                >
+                  {renderGrid(settings)}
+                  {renderXAxis(activeXKey, settings)}
+                  {renderYAxis(activeYKey, settings, true)}
+                  <Tooltip content={<CustomTooltip />} />
+                  <Scatter
+                    data={chartData}
+                    fill={settings.chartColor}
+                    name={activeYKey}
+                    onClick={(row) => handleDrillClick(row?.payload || row)}
+                    cursor={canGoDeeper ? "pointer" : "default"}
+                  />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        </>
       );
     }
 
