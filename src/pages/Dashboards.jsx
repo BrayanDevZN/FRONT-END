@@ -28,6 +28,7 @@ import {
 
 import AppLayout from "../components/AppLayout";
 import Button from "../components/Button";
+import DrillDownControls from "../components/DrillDownControls";
 import Loading from "../components/Loading";
 import ProfileAvatar from "../components/ProfileAvatar";
 
@@ -42,6 +43,7 @@ import {
 import { getDataSources } from "../api/dataSourceApi";
 
 import { getToken } from "../utils/storage";
+import { aggregateDrillRows, canDrillDeeper, getDrillConfig } from "../utils/drillDown";
 import { deleteCollaboration, getDashboardAccess } from "../api/collaborationApi";
 
 const DEFAULT_PIE_COLORS = [
@@ -86,6 +88,7 @@ export default function Dashboards() {
   const [generationStatus, setGenerationStatus] = useState("");
 
   const [chartSettings, setChartSettings] = useState({});
+  const [drillStates, setDrillStates] = useState({});
 
   const [showDeleteDashboardModal, setShowDeleteDashboardModal] = useState(false);
   const [dashboardToDelete, setDashboardToDelete] = useState(null);
@@ -289,6 +292,57 @@ export default function Dashboards() {
         [key]: value,
       },
     }));
+  }
+
+  function getDrillPath(chartId) {
+    return drillStates[chartId]?.path || [];
+  }
+
+  function drillInto(chartId, column, value) {
+    if (!column || value === null || value === undefined) return;
+
+    setDrillStates((prev) => {
+      const currentPath = prev[chartId]?.path || [];
+
+      return {
+        ...prev,
+        [chartId]: {
+          path: [
+            ...currentPath,
+            {
+              column,
+              value: String(value),
+            },
+          ],
+        },
+      };
+    });
+  }
+
+  function drillUp(chartId) {
+    setDrillStates((prev) => {
+      const currentPath = prev[chartId]?.path || [];
+
+      return {
+        ...prev,
+        [chartId]: {
+          path: currentPath.slice(0, -1),
+        },
+      };
+    });
+  }
+
+  function resetDrill(chartId, depth = 0) {
+    setDrillStates((prev) => {
+      const currentPath = prev[chartId]?.path || [];
+
+      return {
+        ...prev,
+        [chartId]: {
+          path: currentPath.slice(0, depth),
+        },
+      };
+    });
   }
 
   async function handleSaveChartSettings() {
@@ -959,6 +1013,7 @@ export default function Dashboards() {
   useEffect(() => {
     if (!selectedDashboard) {
       setChartSettings({});
+      setDrillStates({});
       return;
     }
 
@@ -975,6 +1030,7 @@ export default function Dashboards() {
     });
 
     setChartSettings(nextSettings);
+    setDrillStates({});
   }, [selectedDashboard]);
 
   function getBarRadius(barStyle) {
@@ -1052,24 +1108,59 @@ export default function Dashboards() {
     return <CartesianGrid strokeDasharray={settings.gridStyle} stroke={settings.gridColor} />;
   }
 
-  function renderChart(currentChart, settings) {
+  function renderChart(currentChart, settings, chartId) {
     const rawChartData = getRawChartData(currentChart);
     const chartType = currentChart?.chart_type || currentChart?.type || "bar";
     const operation = currentChart?.operation;
+    const chartConfig = currentChart?.chart_config || currentChart?.config || {};
 
     const { xKey, yKey } = getChartKeys(rawChartData, currentChart);
-    const chartData = formatChartData(rawChartData, yKey);
+    const drillConfig = getDrillConfig(currentChart, rawChartData, xKey);
+    const drillPath = getDrillPath(chartId);
+    const drillEnabled = drillConfig.enabled && drillConfig.hierarchy.length > 1;
+    const drillLevel = Math.min(drillPath.length, Math.max(drillConfig.hierarchy.length - 1, 0));
+    const drillXKey = drillEnabled ? drillConfig.hierarchy[drillLevel]?.column : xKey;
+    const isCountChart = operation === "count" || chartConfig.operation === "count" || chartConfig.aggregation === "count";
+    const drillMeta = chartConfig.drill_down || currentChart?.drill_down || {};
+    const sourceYKey = drillMeta.metric_column || yKey;
+    const drillYKey = drillEnabled && isCountChart ? "Quantidade" : yKey;
+    const aggregation = currentChart?.aggregation || chartConfig.aggregation || "sum";
+    const chartData = formatChartData(
+      drillEnabled
+        ? aggregateDrillRows({
+            rows: drillConfig.rows,
+            hierarchy: drillConfig.hierarchy,
+            path: drillPath,
+            yKey: drillYKey,
+            sourceYKey: isCountChart ? null : sourceYKey,
+            aggregation,
+            operation,
+            limit: currentChart?.limit || chartConfig.limit || 20,
+            sort: currentChart?.sort || chartConfig.sort || "desc",
+          })
+        : rawChartData,
+      drillYKey
+    );
+    const activeXKey = drillEnabled ? drillXKey : xKey;
+    const activeYKey = drillEnabled ? drillYKey : yKey;
+    const canGoDeeper = drillEnabled && canDrillDeeper(drillConfig.hierarchy, drillPath);
+
+    function handleDrillClick(row) {
+      if (!canGoDeeper || !row || !activeXKey) return;
+
+      drillInto(chartId, activeXKey, row[activeXKey]);
+    }
 
     if (!currentChart || chartData.length === 0) {
       return <p>Sem dados para exibir.</p>;
     }
 
-    if (chartType !== "table" && (!xKey || !yKey)) {
+    if (chartType !== "table" && (!activeXKey || !activeYKey)) {
       console.log("Gráfico com configuração incompleta:", {
         currentChart,
         rawChartData,
-        xKey,
-        yKey,
+        xKey: activeXKey,
+        yKey: activeYKey,
       });
 
       return <p>Configuração do gráfico incompleta.</p>;
@@ -1095,13 +1186,23 @@ export default function Dashboards() {
       padding: 24,
     };
 
+    const drillControls = (
+      <DrillDownControls
+        hierarchy={drillConfig.hierarchy}
+        path={drillPath}
+        canGoBack={drillPath.length > 0}
+        onBack={() => drillUp(chartId)}
+        onReset={(depth) => resetDrill(chartId, typeof depth === "number" ? depth : 0)}
+      />
+    );
+
     if (chartType === "kpi" || operation === "kpi") {
-      const value = chartData?.[0]?.[yKey];
+      const value = chartData?.[0]?.[activeYKey];
 
       return (
         <div className="chart-scroll">
           <div style={chartWrapperStyle} className="dashboard-kpi-card">
-            <span>{currentChart.title || yKey}</span>
+            <span>{currentChart.title || activeYKey}</span>
             <strong>{formatTooltipValue(value)}</strong>
           </div>
         </div>
@@ -1110,91 +1211,110 @@ export default function Dashboards() {
 
     if (chartType === "line") {
       return (
-        <div className="chart-scroll">
-          <div style={chartWrapperStyle}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 24, right: 55, left: 34, bottom: 96 }}>
-                {renderGrid(settings)}
-                {renderXAxis(xKey, settings)}
-                {renderYAxis(yKey, settings)}
-                <Tooltip content={<CustomTooltip />} />
-                <Line
-                  type="monotone"
-                  dataKey={yKey}
-                  name={yKey}
-                  stroke={settings.chartColor}
-                  strokeWidth={4}
-                  dot={{ r: 5, fill: settings.chartColor }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+        <>
+          {drillControls}
+          <div className="chart-scroll">
+            <div style={chartWrapperStyle}>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={chartData}
+                  margin={{ top: 24, right: 55, left: 34, bottom: 96 }}
+                  onClick={(event) => handleDrillClick(event?.activePayload?.[0]?.payload)}
+                >
+                  {renderGrid(settings)}
+                  {renderXAxis(activeXKey, settings)}
+                  {renderYAxis(activeYKey, settings)}
+                  <Tooltip content={<CustomTooltip />} />
+                  <Line
+                    type="monotone"
+                    dataKey={activeYKey}
+                    name={activeYKey}
+                    stroke={settings.chartColor}
+                    strokeWidth={4}
+                    dot={{ r: 5, fill: settings.chartColor, cursor: canGoDeeper ? "pointer" : "default" }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        </>
       );
     }
 
     if (chartType === "area") {
       return (
-        <div className="chart-scroll">
-          <div style={chartWrapperStyle}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={chartData} margin={{ top: 24, right: 55, left: 34, bottom: 96 }}>
-                {renderGrid(settings)}
-                {renderXAxis(xKey, settings)}
-                {renderYAxis(yKey, settings)}
-                <Tooltip content={<CustomTooltip />} />
-                <Area
-                  type="monotone"
-                  dataKey={yKey}
-                  name={yKey}
-                  stroke={settings.chartColor}
-                  fill={settings.chartColor}
-                  fillOpacity={0.24}
-                  strokeWidth={4}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+        <>
+          {drillControls}
+          <div className="chart-scroll">
+            <div style={chartWrapperStyle}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={chartData}
+                  margin={{ top: 24, right: 55, left: 34, bottom: 96 }}
+                  onClick={(event) => handleDrillClick(event?.activePayload?.[0]?.payload)}
+                >
+                  {renderGrid(settings)}
+                  {renderXAxis(activeXKey, settings)}
+                  {renderYAxis(activeYKey, settings)}
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey={activeYKey}
+                    name={activeYKey}
+                    stroke={settings.chartColor}
+                    fill={settings.chartColor}
+                    fillOpacity={0.24}
+                    strokeWidth={4}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        </>
       );
     }
 
     if (chartType === "pie" || chartType === "donut") {
       return (
-        <div className="chart-scroll">
-          <div style={chartWrapperStyle}>
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Tooltip content={<CustomTooltip />} />
+        <>
+          {drillControls}
+          <div className="chart-scroll">
+            <div style={chartWrapperStyle}>
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Tooltip content={<CustomTooltip />} />
 
-                {settings.showLegend && (
-                  <Legend
-                    verticalAlign="bottom"
-                    height={70}
-                    wrapperStyle={{
-                      color: settings.xAxisTextColor,
-                      fontWeight: 700,
-                      fontSize: 13,
-                    }}
-                  />
-                )}
+                  {settings.showLegend && (
+                    <Legend
+                      verticalAlign="bottom"
+                      height={70}
+                      wrapperStyle={{
+                        color: settings.xAxisTextColor,
+                        fontWeight: 700,
+                        fontSize: 13,
+                      }}
+                    />
+                  )}
 
-                <Pie
-                  data={chartData}
-                  dataKey={yKey}
-                  nameKey={xKey}
-                  innerRadius={chartType === "donut" ? 100 : 0}
-                  outerRadius={220}
-                  label
-                >
-                  {chartData.map((_, index) => (
-                    <Cell key={`slice-${index}`} fill={getPieColor(settings, index)} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
+                  <Pie
+                    data={chartData}
+                    dataKey={activeYKey}
+                    nameKey={activeXKey}
+                    innerRadius={chartType === "donut" ? 100 : 0}
+                    outerRadius={220}
+                    label
+                    onClick={(row) => handleDrillClick(row)}
+                    cursor={canGoDeeper ? "pointer" : "default"}
+                  >
+                    {chartData.map((_, index) => (
+                      <Cell key={`slice-${index}`} fill={getPieColor(settings, index)} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        </>
       );
     }
 
@@ -1205,10 +1325,10 @@ export default function Dashboards() {
             <ResponsiveContainer width="100%" height="100%">
               <ScatterChart margin={{ top: 24, right: 55, left: 34, bottom: 96 }}>
                 {renderGrid(settings)}
-                {renderXAxis(xKey, settings)}
-                {renderYAxis(yKey, settings, true)}
+                {renderXAxis(activeXKey, settings)}
+                {renderYAxis(activeYKey, settings, true)}
                 <Tooltip content={<CustomTooltip />} />
-                <Scatter data={chartData} fill={settings.chartColor} name={yKey} />
+                <Scatter data={chartData} fill={settings.chartColor} name={activeYKey} />
               </ScatterChart>
             </ResponsiveContainer>
           </div>
@@ -1218,54 +1338,59 @@ export default function Dashboards() {
 
     if (chartType === "horizontal_bar") {
       return (
-        <div className="chart-scroll">
-          <div style={chartWrapperStyle}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={chartData}
-                layout="vertical"
-                margin={{ top: 24, right: 55, left: 160, bottom: 40 }}
-              >
-                {renderGrid(settings)}
+        <>
+          {drillControls}
+          <div className="chart-scroll">
+            <div style={chartWrapperStyle}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  layout="vertical"
+                  margin={{ top: 24, right: 55, left: 160, bottom: 40 }}
+                >
+                  {renderGrid(settings)}
 
-                <XAxis
-                  type="number"
-                  tick={{
-                    fill: settings.xAxisTextColor,
-                    fontSize: 12,
-                    fontWeight: 700,
-                  }}
-                  axisLine={{ stroke: "#94a3b8" }}
-                  tickLine={{ stroke: "#94a3b8" }}
-                />
+                  <XAxis
+                    type="number"
+                    tick={{
+                      fill: settings.xAxisTextColor,
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                    axisLine={{ stroke: "#94a3b8" }}
+                    tickLine={{ stroke: "#94a3b8" }}
+                  />
 
-                <YAxis
-                  dataKey={xKey}
-                  type="category"
-                  width={165}
-                  tick={{
-                    fill: settings.yAxisTextColor,
-                    fontSize: 12,
-                    fontWeight: 700,
-                  }}
-                  axisLine={{ stroke: "#94a3b8" }}
-                  tickLine={{ stroke: "#94a3b8" }}
-                />
+                  <YAxis
+                    dataKey={activeXKey}
+                    type="category"
+                    width={165}
+                    tick={{
+                      fill: settings.yAxisTextColor,
+                      fontSize: 12,
+                      fontWeight: 700,
+                    }}
+                    axisLine={{ stroke: "#94a3b8" }}
+                    tickLine={{ stroke: "#94a3b8" }}
+                  />
 
-                <Tooltip content={<CustomTooltip />} />
+                  <Tooltip content={<CustomTooltip />} />
 
-                <Bar
-                  dataKey={yKey}
-                  name={yKey}
-                  fill={settings.chartColor}
-                  radius={[0, 10, 10, 0]}
-                  barSize={Math.min(getBarSize(settings.barStyle), 46)}
-                  minPointSize={4}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+                  <Bar
+                    dataKey={activeYKey}
+                    name={activeYKey}
+                    fill={settings.chartColor}
+                    radius={[0, 10, 10, 0]}
+                    barSize={Math.min(getBarSize(settings.barStyle), 46)}
+                    minPointSize={4}
+                    onClick={(row) => handleDrillClick(row?.payload || row)}
+                    cursor={canGoDeeper ? "pointer" : "default"}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        </>
       );
     }
 
@@ -1297,26 +1422,31 @@ export default function Dashboards() {
     }
 
     return (
-      <div className="chart-scroll">
-        <div style={chartWrapperStyle}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 24, right: 55, left: 34, bottom: 96 }} barCategoryGap="20%">
-              {renderGrid(settings)}
-              {renderXAxis(xKey, settings)}
-              {renderYAxis(yKey, settings)}
-              <Tooltip content={<CustomTooltip />} />
-              <Bar
-                dataKey={yKey}
-                name={yKey}
-                fill={settings.chartColor}
-                radius={getBarRadius(settings.barStyle)}
-                barSize={getBarSize(settings.barStyle)}
-                minPointSize={4}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+      <>
+        {drillControls}
+        <div className="chart-scroll">
+          <div style={chartWrapperStyle}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 24, right: 55, left: 34, bottom: 96 }} barCategoryGap="20%">
+                {renderGrid(settings)}
+                {renderXAxis(activeXKey, settings)}
+                {renderYAxis(activeYKey, settings)}
+                <Tooltip content={<CustomTooltip />} />
+                <Bar
+                  dataKey={activeYKey}
+                  name={activeYKey}
+                  fill={settings.chartColor}
+                  radius={getBarRadius(settings.barStyle)}
+                  barSize={getBarSize(settings.barStyle)}
+                  minPointSize={4}
+                  onClick={(row) => handleDrillClick(row?.payload || row)}
+                  cursor={canGoDeeper ? "pointer" : "default"}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
@@ -1577,7 +1707,7 @@ export default function Dashboards() {
                             {renderChartControls(currentChart, index)}
 
                             <div className="dashboard-chart-real">
-                              {renderChart(currentChart, settings)}
+                              {renderChart(currentChart, settings, chartId)}
                             </div>
                           </div>
                         );

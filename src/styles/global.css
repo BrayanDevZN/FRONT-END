@@ -1073,6 +1073,61 @@ a:hover {
   outline: none;
 }
 
+.drilldown-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid #dbe5f2;
+  border-radius: 8px;
+  background: #f8fbff;
+}
+
+.drilldown-back-button,
+.drilldown-breadcrumb button {
+  border: 1px solid #cfd8e6;
+  background: #ffffff;
+  color: #0f172a;
+  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 8px;
+  padding: 0 10px;
+  font-size: 12px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.drilldown-back-button:disabled,
+.drilldown-breadcrumb button:disabled {
+  opacity: 0.48;
+  cursor: not-allowed;
+}
+
+.drilldown-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.drilldown-crumb,
+.drilldown-current {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.drilldown-current strong {
+  color: #155e75;
+}
+
 .dashboard-chart-real {
   width: 100%;
   min-height: 500px;
