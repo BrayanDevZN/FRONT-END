@@ -1,9 +1,11 @@
 const AI_URL = "https://web-production-40ead.up.railway.app";
 const ACCOUNTS_URL = "https://web-production-81b91.up.railway.app";
+const DASHBOARD_CREATION_POLL_ATTEMPTS = 36;
+const DASHBOARD_CREATION_POLL_INTERVAL_MS = 5000;
 
 async function parseResponse(response, fallbackMessage) {
   const text = await response.text().catch(() => "");
-  let data = null;
+  let data;
 
   try {
     data = text ? JSON.parse(text) : null;
@@ -36,7 +38,9 @@ async function parseResponse(response, fallbackMessage) {
       body: data || text,
     });
 
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return data || {};
@@ -59,6 +63,7 @@ async function safeFetch(url, options, fallbackMessage) {
       error?.message === "Failed to fetch" ||
       error instanceof TypeError
     ) {
+      // eslint-disable-next-line preserve-caught-error
       throw new Error(
         "Não foi possível conectar com a API. Verifique se a API está online, se a URL está correta e se o CORS está liberado."
       );
@@ -88,6 +93,93 @@ function normalizeChartsPayload(data) {
   };
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function normalizeText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+function isConnectionError(error) {
+  const message = String(error?.message || "").toLowerCase();
+  const status = Number(error?.status);
+
+  return (
+    error instanceof TypeError ||
+    [502, 503, 504].includes(status) ||
+    message.includes("failed to fetch") ||
+    message.includes("nao foi possivel conectar") ||
+    message.includes("não foi possível conectar") ||
+    message.includes("networkerror") ||
+    message.includes("load failed")
+  );
+}
+
+function findCreatedDashboard(dashboards, title, dataSourceId, startedAt) {
+  const cleanTitle = normalizeText(title);
+  const sourceId = Number(dataSourceId);
+  const startedTime = startedAt ? startedAt.getTime() : 0;
+
+  return (dashboards || []).find((dashboard) => {
+    const sameTitle = normalizeText(dashboard.title) === cleanTitle;
+    const sameSource = Number(dashboard.data_source_id) === sourceId;
+
+    if (!sameTitle || !sameSource) return false;
+
+    const createdAt = dashboard.created_at || dashboard.updated_at;
+
+    if (!createdAt || !startedTime) return true;
+
+    return new Date(createdAt).getTime() >= startedTime - 60000;
+  });
+}
+
+async function waitForCreatedDashboard({
+  token,
+  title,
+  data_source_id,
+  startedAt,
+  onStatus,
+}) {
+  for (let attempt = 1; attempt <= DASHBOARD_CREATION_POLL_ATTEMPTS; attempt += 1) {
+    if (onStatus) {
+      onStatus("Aguardando a API confirmar o dashboard criado...");
+    }
+
+    await sleep(DASHBOARD_CREATION_POLL_INTERVAL_MS);
+
+    let response;
+
+    try {
+      response = await getDashboards(token);
+    } catch (error) {
+      console.warn("Aguardando dashboard criado, mas a consulta falhou:", error);
+      continue;
+    }
+
+    const dashboard = findCreatedDashboard(
+      response?.dashboards || [],
+      title,
+      data_source_id,
+      startedAt
+    );
+
+    if (dashboard?.id) {
+      return normalizeChartsPayload({
+        dashboard,
+        charts: dashboard.charts || [],
+      });
+    }
+  }
+
+  return null;
+}
+
 export async function generateDashboard({
   token,
   title,
@@ -95,6 +187,8 @@ export async function generateDashboard({
   data_source_id,
   onStatus,
 }) {
+  const startedAt = new Date();
+
   function buildFormData() {
     const formData = new FormData();
 
@@ -107,28 +201,90 @@ export async function generateDashboard({
   }
 
   async function generateWithStandardRequest() {
-    const data = await safeFetch(
-      `${AI_URL}/dashboard/analyze`,
-      {
-        method: "POST",
-        body: buildFormData(),
-      },
-      "Erro ao gerar dashboard."
-    );
+    try {
+      const data = await safeFetch(
+        `${AI_URL}/dashboard/analyze`,
+        {
+          method: "POST",
+          body: buildFormData(),
+        },
+        "Erro ao gerar dashboard."
+      );
 
-    return normalizeChartsPayload(data);
+      return normalizeChartsPayload(data);
+    } catch (error) {
+      if (!isConnectionError(error)) {
+        throw error;
+      }
+
+      const createdDashboard = await waitForCreatedDashboard({
+        token,
+        title,
+        data_source_id,
+        startedAt,
+        onStatus,
+      });
+
+      if (createdDashboard) {
+        return createdDashboard;
+      }
+
+      throw error;
+    }
   }
 
   if (onStatus && typeof ReadableStream !== "undefined") {
-    const response = await fetch(`${AI_URL}/dashboard/analyze/stream`, {
-      method: "POST",
-      body: buildFormData(),
-    });
+    let response;
+
+    try {
+      response = await fetch(`${AI_URL}/dashboard/analyze/stream`, {
+        method: "POST",
+        body: buildFormData(),
+      });
+    } catch (error) {
+      if (!isConnectionError(error)) {
+        throw error;
+      }
+
+      const createdDashboard = await waitForCreatedDashboard({
+        token,
+        title,
+        data_source_id,
+        startedAt,
+        onStatus,
+      });
+
+      if (createdDashboard) {
+        return createdDashboard;
+      }
+
+      throw error;
+    }
 
     if (!response.ok || !response.body) {
-      return normalizeChartsPayload(
-        await parseResponse(response, "Erro ao gerar dashboard.")
-      );
+      try {
+        return normalizeChartsPayload(
+          await parseResponse(response, "Erro ao gerar dashboard.")
+        );
+      } catch (error) {
+        if (!isConnectionError(error)) {
+          throw error;
+        }
+
+        const createdDashboard = await waitForCreatedDashboard({
+          token,
+          title,
+          data_source_id,
+          startedAt,
+          onStatus,
+        });
+
+        if (createdDashboard) {
+          return createdDashboard;
+        }
+
+        throw error;
+      }
     }
 
     const reader = response.body.getReader();
@@ -136,32 +292,52 @@ export async function generateDashboard({
     let buffer = "";
     let finalData = null;
 
-    while (true) {
-      const { value, done } = await reader.read();
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
 
-      if (done) break;
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
-      for (const line of lines) {
-        if (!line.trim()) continue;
+        for (const line of lines) {
+          if (!line.trim()) continue;
 
-        const event = JSON.parse(line);
+          const event = JSON.parse(line);
 
-        if (event.type === "status") {
-          onStatus(event.message);
-        }
+          if (event.type === "status") {
+            onStatus(event.message);
+          }
 
-        if (event.type === "error") {
-          throw new Error(event.message || "Erro ao gerar dashboard.");
-        }
+          if (event.type === "error") {
+            throw new Error(event.message || "Erro ao gerar dashboard.");
+          }
 
-        if (event.type === "complete") {
-          finalData = event.data;
+          if (event.type === "complete") {
+            finalData = event.data;
+          }
         }
       }
+    } catch (error) {
+      if (!isConnectionError(error)) {
+        throw error;
+      }
+
+      const createdDashboard = await waitForCreatedDashboard({
+        token,
+        title,
+        data_source_id,
+        startedAt,
+        onStatus,
+      });
+
+      if (createdDashboard) {
+        return createdDashboard;
+      }
+
+      throw error;
     }
 
     if (buffer.trim()) {
@@ -173,8 +349,19 @@ export async function generateDashboard({
     }
 
     if (!finalData) {
-      onStatus("Finalizando pela rota principal.");
-      return await generateWithStandardRequest();
+      const createdDashboard = await waitForCreatedDashboard({
+        token,
+        title,
+        data_source_id,
+        startedAt,
+        onStatus,
+      });
+
+      if (createdDashboard) {
+        return createdDashboard;
+      }
+
+      throw new Error("A API ainda nao confirmou o dashboard criado. Tente novamente em instantes.");
     }
 
     return normalizeChartsPayload(finalData);

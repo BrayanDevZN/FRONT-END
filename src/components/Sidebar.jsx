@@ -53,6 +53,7 @@ export default function SidebarWithDataSources() {
   const [dashboardTitle, setDashboardTitle] = useState("");
   const [dashboardPrompt, setDashboardPrompt] = useState("");
   const [selectedDataSourceId, setSelectedDataSourceId] = useState("");
+  const [dashboardGenerationStatus, setDashboardGenerationStatus] = useState("");
 
   const [modalError, setModalError] = useState("");
 
@@ -244,6 +245,7 @@ export default function SidebarWithDataSources() {
     setDashboardTitle("");
     setDashboardPrompt("");
     setSelectedDataSourceId("");
+    setDashboardGenerationStatus("");
     setModalError("");
     setShowNewDashboardModal(true);
     loadDashboardSources();
@@ -255,6 +257,7 @@ export default function SidebarWithDataSources() {
     setDashboardTitle("");
     setDashboardPrompt("");
     setSelectedDataSourceId("");
+    setDashboardGenerationStatus("");
     setModalError("");
     setShowNewDashboardModal(false);
   }
@@ -272,6 +275,7 @@ export default function SidebarWithDataSources() {
     try {
       setLoading(true);
       setModalError("");
+      setDashboardGenerationStatus("Preparando a geracao do dashboard...");
 
       const token = getToken();
 
@@ -340,6 +344,7 @@ export default function SidebarWithDataSources() {
         title,
         prompt,
         data_source_id: Number(selectedDataSourceId),
+        onStatus: setDashboardGenerationStatus,
       });
 
       const createdDashboardId = response?.dashboard?.id || response?.id;
@@ -353,6 +358,7 @@ export default function SidebarWithDataSources() {
       setDashboardTitle("");
       setDashboardPrompt("");
       setSelectedDataSourceId("");
+      setDashboardGenerationStatus("");
       setShowNewDashboardModal(false);
 
       goToDashboard(createdDashboardId);
@@ -362,6 +368,7 @@ export default function SidebarWithDataSources() {
       setModalError(err.message || "Erro ao criar dashboard.");
     } finally {
       setLoading(false);
+      setDashboardGenerationStatus("");
     }
   }
 
@@ -883,6 +890,10 @@ export default function SidebarWithDataSources() {
               placeholder="Ex: Análise de vendas"
               autoFocus
             />
+
+            {dashboardGenerationStatus && (
+              <p className="dashboard-stream-status">{dashboardGenerationStatus}</p>
+            )}
 
             {modalError && <p className="modal-error">{modalError}</p>}
 
