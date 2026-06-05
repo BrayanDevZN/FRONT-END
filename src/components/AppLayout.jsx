@@ -22,6 +22,7 @@ const PAGE_TITLES = {
   collaborations: "Colaborações",
   movimentacoes: "Movimentações",
   relatorios: "Relatórios",
+  about: "Sobre Nós",
   help: "Ajuda",
 };
 
@@ -95,6 +96,14 @@ function getPageInfo(pathname) {
       key: "relatorios",
       title: PAGE_TITLES.relatorios,
       subtitle: "Consulte seus relatórios.",
+    };
+  }
+
+  if (pathname.startsWith("/sobre-nos")) {
+    return {
+      key: "about",
+      title: PAGE_TITLES.about,
+      subtitle: "Conheça o time por trás do DataPilot AI.",
     };
   }
 
