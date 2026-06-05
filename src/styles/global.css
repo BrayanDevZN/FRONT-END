@@ -8051,6 +8051,7 @@ body .permission-grid > button.permission-button small {
 
 .about-member-card.is-featured .about-member-photo-wrap {
   height: 270px;
+  background: linear-gradient(135deg, #eef6ff, #dff7ff);
 }
 
 .about-member-photo {
@@ -8065,8 +8066,17 @@ body .permission-grid > button.permission-button small {
   object-position: center 38%;
 }
 
+.about-member-photo[alt="Eduardo Rodrigues"] {
+  object-fit: contain;
+  object-position: center center;
+}
+
 .about-member-card:hover .about-member-photo {
   transform: scale(1.04);
+}
+
+.about-member-card:hover .about-member-photo[alt="Eduardo Rodrigues"] {
+  transform: none;
 }
 
 .about-photo-zoom {
