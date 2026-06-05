@@ -36,6 +36,16 @@ const TEAM_TIERS = [
         tags: ["Estratégia", "Produto", "IA aplicada"],
         featured: true,
       },
+      {
+        name: "Brayan de Souza",
+        role: "Líder Back-end & Integrações",
+        image: "/team/brayan-de-souza.jpeg",
+        icon: Bot,
+        summary:
+          "Lidera a base técnica, integrações, estrutura de APIs e conexão entre dados carregados e recursos inteligentes do sistema.",
+        tags: ["APIs", "Banco de dados", "Integrações"],
+        featured: true,
+      },
     ],
   },
   {
@@ -116,15 +126,6 @@ const TEAM_TIERS = [
         summary:
           "Testa fluxos, revisa comportamentos, identifica inconsistências e garante que a experiência final esteja estável.",
         tags: ["Testes", "Qualidade", "Confiabilidade"],
-      },
-      {
-        name: "Brayan de Souza",
-        role: "Desenvolvedor Back-end & Integrações",
-        image: "/team/brayan-de-souza.jpeg",
-        icon: Bot,
-        summary:
-          "Atua na base técnica, integrações, estrutura de APIs e conexão entre dados carregados e recursos inteligentes do sistema.",
-        tags: ["APIs", "Banco de dados", "Integrações"],
       },
     ],
   },

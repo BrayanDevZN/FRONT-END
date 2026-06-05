@@ -7993,7 +7993,7 @@ body .permission-grid > button.permission-button small {
 }
 
 .about-tier-direcao .about-members-grid {
-  grid-template-columns: minmax(260px, 520px);
+  grid-template-columns: repeat(2, minmax(260px, 420px));
   justify-content: center;
 }
 
@@ -8063,7 +8063,12 @@ body .permission-grid > button.permission-button small {
 }
 
 .about-member-photo[alt="Brayan de Souza"] {
-  object-position: center 38%;
+  object-position: center 30%;
+}
+
+.about-member-card.is-featured .about-member-photo[alt="Brayan de Souza"] {
+  object-fit: contain;
+  object-position: center center;
 }
 
 .about-member-photo[alt="Eduardo Rodrigues"] {
@@ -8076,6 +8081,10 @@ body .permission-grid > button.permission-button small {
 }
 
 .about-member-card:hover .about-member-photo[alt="Eduardo Rodrigues"] {
+  transform: none;
+}
+
+.about-member-card:hover .about-member-photo[alt="Brayan de Souza"] {
   transform: none;
 }
 
