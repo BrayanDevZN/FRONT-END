@@ -8014,7 +8014,8 @@ body .permission-grid > button.permission-button small {
 }
 
 .about-tier-execucao .about-members-grid {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: 100%;
+  grid-template-columns: repeat(4, minmax(260px, 1fr));
 }
 
 .about-member-card {
@@ -8257,8 +8258,7 @@ body .permission-grid > button.permission-button small {
 }
 
 @media (max-width: 1320px) {
-  .about-tier-estrategia .about-members-grid,
-  .about-tier-execucao .about-members-grid {
+  .about-tier-estrategia .about-members-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
