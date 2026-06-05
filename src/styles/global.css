@@ -7056,12 +7056,13 @@ body,
 }
 
 .sidebar-brand {
-  margin: 0 -18px 18px !important;
-  padding: 22px 18px 20px !important;
+  margin: 0 0 18px !important;
+  padding: 18px 14px !important;
   background:
-    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.52), transparent 12rem),
-    linear-gradient(145deg, #8ff3ff 0%, #45dff2 48%, #14b8d4 100%) !important;
+    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, 0.34), transparent 12rem),
+    linear-gradient(145deg, #5ee7f3 0%, #22c1d6 48%, #0e9db8 100%) !important;
   border-bottom: 1px solid rgba(8, 145, 178, 0.22);
+  border-radius: 0 0 18px 18px;
   box-shadow: 0 16px 38px rgba(14, 165, 233, 0.22);
   text-shadow: none !important;
 }
@@ -7069,15 +7070,15 @@ body,
 .sidebar-brand .sidebar-logo-button {
   width: 100%;
   min-height: 54px;
-  justify-content: flex-start;
+  justify-content: center;
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
 }
 
 .sidebar-brand .sidebar-logo-button img {
-  width: 172px;
-  max-width: 100%;
+  width: 160px;
+  max-width: calc(100% - 10px);
   filter: none !important;
 }
 
@@ -7996,6 +7997,22 @@ body .permission-grid > button.permission-button small {
   justify-content: center;
 }
 
+.about-tier-estrategia .about-members-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.about-tier-estrategia .about-member-card:nth-child(1) {
+  grid-column: 2;
+}
+
+.about-tier-estrategia .about-member-card:nth-child(2) {
+  grid-column: 3;
+}
+
+.about-tier-estrategia .about-member-card:nth-child(3) {
+  grid-column: 4;
+}
+
 .about-tier-execucao .about-members-grid {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
@@ -8042,6 +8059,10 @@ body .permission-grid > button.permission-button small {
   height: 100%;
   object-fit: cover;
   transition: transform 0.24s ease;
+}
+
+.about-member-photo[alt="Brayan de Souza"] {
+  object-position: center 38%;
 }
 
 .about-member-card:hover .about-member-photo {
@@ -8214,8 +8235,15 @@ body .permission-grid > button.permission-button small {
 }
 
 @media (max-width: 1320px) {
+  .about-tier-estrategia .about-members-grid,
   .about-tier-execucao .about-members-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .about-tier-estrategia .about-member-card:nth-child(1),
+  .about-tier-estrategia .about-member-card:nth-child(2),
+  .about-tier-estrategia .about-member-card:nth-child(3) {
+    grid-column: auto;
   }
 }
 
