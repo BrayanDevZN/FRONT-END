@@ -8051,8 +8051,8 @@ body .permission-grid > button.permission-button small {
 }
 
 .about-member-card.is-featured .about-member-photo-wrap {
-  height: 270px;
-  background: #f8fafc;
+  height: 320px;
+  background: #ffffff;
 }
 
 .about-member-photo {
@@ -8069,15 +8069,15 @@ body .permission-grid > button.permission-button small {
 }
 
 .about-member-card.is-featured .about-member-photo[alt="Brayan de Souza"] {
-  object-fit: contain;
-  object-position: center center;
-  transform: none;
+  object-fit: cover;
+  object-position: center 28%;
+  transform: scale(1.01);
 }
 
 .about-member-photo[alt="Eduardo Rodrigues"] {
-  object-fit: contain;
-  object-position: center center;
-  transform: none;
+  object-fit: cover;
+  object-position: center 18%;
+  transform: scale(1.01);
 }
 
 .about-member-card:hover .about-member-photo {
@@ -8085,11 +8085,11 @@ body .permission-grid > button.permission-button small {
 }
 
 .about-member-card:hover .about-member-photo[alt="Eduardo Rodrigues"] {
-  transform: none;
+  transform: scale(1.025);
 }
 
 .about-member-card:hover .about-member-photo[alt="Brayan de Souza"] {
-  transform: none;
+  transform: scale(1.025);
 }
 
 .about-photo-zoom {
@@ -8303,7 +8303,7 @@ body .permission-grid > button.permission-button small {
 
   .about-member-photo-wrap,
   .about-member-card.is-featured .about-member-photo-wrap {
-    height: 250px;
+    height: 270px;
   }
 
   .about-photo-modal {
