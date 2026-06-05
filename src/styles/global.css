@@ -8052,7 +8052,7 @@ body .permission-grid > button.permission-button small {
 
 .about-member-card.is-featured .about-member-photo-wrap {
   height: 270px;
-  background: linear-gradient(135deg, #eef6ff, #dff7ff);
+  background: #f8fafc;
 }
 
 .about-member-photo {
