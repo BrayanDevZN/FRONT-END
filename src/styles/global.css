@@ -5009,7 +5009,7 @@ a:hover {
 
 .dashboard-source-option.is-selected {
   border-color: #2563eb;
-  background: #eff6ff;
+  background: #ffffff;
 }
 
 .dashboard-source-option span {
@@ -7420,6 +7420,13 @@ body .app-content .data-sources-page .data-sources-list > button.data-source-ite
   background-image: none !important;
   border: 1px solid #dbe7f3 !important;
   color: #07152e !important;
+}
+
+body .dashboard-source-picker .dashboard-source-option.is-selected {
+  background: #ffffff !important;
+  background-image: none !important;
+  color: #07152e !important;
+  border-color: #38bdf8 !important;
 }
 
 body .app-content .home-hub-page .home-main-grid .home-actions-grid > button:hover,

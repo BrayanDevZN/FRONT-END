@@ -1,3 +1,5 @@
+import { handleExpiredSession, isSessionExpiredError } from "../utils/session";
+
 const ACCOUNTS_URL = "https://web-production-81b91.up.railway.app";
 
 async function request(path, { method = "POST", body } = {}) {
@@ -9,7 +11,15 @@ async function request(path, { method = "POST", body } = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data?.detail || data?.message || "Erro ao processar colaboração.");
+    const message = data?.detail || data?.message || "Erro ao processar colaboracao.";
+
+    if (isSessionExpiredError(message, response.status)) {
+      handleExpiredSession(message);
+    }
+
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return data;

@@ -534,14 +534,17 @@ export default function Dashboards() {
 
       setGenerationStatus("Abrindo dashboard gerado.");
 
-      await loadDashboards();
-      await openDashboard(createdDashboardId);
+      if (response?.dashboard) {
+        setSelectedDashboard(response.dashboard);
+      }
 
       setShowCreate(false);
       setTitle("");
       setPrompt("");
       setSelectedDataSourceId("");
       setGenerationStatus("");
+      navigate(`/dashboards?dashboard_id=${createdDashboardId}`);
+      loadDashboards();
     } catch (err) {
       console.error("Erro ao gerar dashboard:", err);
 

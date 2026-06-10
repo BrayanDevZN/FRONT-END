@@ -1,3 +1,5 @@
+import { handleExpiredSession, isSessionExpiredError } from "../utils/session";
+
 const ACCOUNTS_URL = "https://web-production-81b91.up.railway.app";
 
 function getErrorMessage(data) {
@@ -36,7 +38,15 @@ async function request(endpoint, options = {}) {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(getErrorMessage(data));
+    const message = getErrorMessage(data);
+
+    if (isSessionExpiredError(message, response.status)) {
+      handleExpiredSession(message);
+    }
+
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
 
   return data;

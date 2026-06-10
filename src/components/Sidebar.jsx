@@ -276,7 +276,6 @@ export default function SidebarWithDataSources() {
     try {
       setLoading(true);
       setModalError("");
-      setDashboardGenerationStatus("Preparando a geracao do dashboard...");
 
       const token = getToken();
 
@@ -354,8 +353,6 @@ export default function SidebarWithDataSources() {
         throw new Error("A API respondeu, mas nao retornou o dashboard criado.");
       }
 
-      await loadDashboards();
-
       setDashboardTitle("");
       setDashboardPrompt("");
       setSelectedDataSourceId("");
@@ -363,6 +360,7 @@ export default function SidebarWithDataSources() {
       setShowNewDashboardModal(false);
 
       goToDashboard(createdDashboardId);
+      loadDashboards();
     } catch (err) {
       console.error("Erro ao criar dashboard:", err);
 

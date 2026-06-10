@@ -1,3 +1,5 @@
+import { handleExpiredSession, isSessionExpiredError } from "../utils/session";
+
 const AI_URL = "https://web-production-40ead.up.railway.app";
 const ACCOUNTS_URL = "https://web-production-81b91.up.railway.app";
 const DASHBOARD_CREATION_POLL_ATTEMPTS = 36;
@@ -40,6 +42,11 @@ async function parseResponse(response, fallbackMessage) {
 
     const error = new Error(message);
     error.status = response.status;
+
+    if (isSessionExpiredError(error, response.status)) {
+      handleExpiredSession(message);
+    }
+
     throw error;
   }
 
@@ -312,11 +319,19 @@ export async function generateDashboard({
           }
 
           if (event.type === "error") {
-            throw new Error(event.message || "Erro ao gerar dashboard.");
+            const error = new Error(event.message || "Erro ao gerar dashboard.");
+
+            if (isSessionExpiredError(error)) {
+              handleExpiredSession(error.message);
+            }
+
+            throw error;
           }
 
           if (event.type === "complete") {
-            finalData = event.data;
+            finalData = normalizeChartsPayload(event.data);
+            await reader.cancel().catch(() => {});
+            return finalData;
           }
         }
       }

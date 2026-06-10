@@ -1,8 +1,10 @@
+import { handleExpiredSession, isSessionExpiredError } from "../utils/session";
+
 const ACCOUNTS_URL = "https://web-production-81b91.up.railway.app";
 
 async function parseResponse(response, fallbackMessage) {
   const text = await response.text().catch(() => "");
-  let data = null;
+  let data;
 
   try {
     data = text ? JSON.parse(text) : null;
@@ -17,6 +19,10 @@ async function parseResponse(response, fallbackMessage) {
       data?.error ||
       text ||
       fallbackMessage;
+
+    if (isSessionExpiredError(message, response.status)) {
+      handleExpiredSession(message);
+    }
 
     throw new Error(message);
   }
@@ -34,7 +40,8 @@ async function safeFetch(url, options, fallbackMessage) {
       error instanceof TypeError
     ) {
       throw new Error(
-        "A requisição demorou ou a conexão foi interrompida. Atualize a lista para verificar se a ação foi concluída."
+        "A requisição demorou ou a conexão foi interrompida. Atualize a lista para verificar se a ação foi concluída.",
+        { cause: error }
       );
     }
 
