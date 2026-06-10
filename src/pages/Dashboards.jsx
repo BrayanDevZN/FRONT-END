@@ -44,6 +44,10 @@ import { getDataSources } from "../api/dataSourceApi";
 
 import { getToken } from "../utils/storage";
 import { aggregateDrillRows, canDrillDeeper, getDrillConfig } from "../utils/drillDown";
+import {
+  saveCreatedDashboardHandoff,
+  takeCreatedDashboardHandoff,
+} from "../utils/dashboardHandoff";
 import { deleteCollaboration, getDashboardAccess } from "../api/collaborationApi";
 
 const DEFAULT_PIE_COLORS = [
@@ -131,7 +135,7 @@ export default function Dashboards() {
     }
   }
 
-  async function loadDashboards() {
+  async function loadDashboards(options = {}) {
     setLoadingList(true);
     setError("");
 
@@ -142,7 +146,11 @@ export default function Dashboards() {
 
       setDashboards(dashboardList);
 
-      const dashboardIdFromUrl = searchParams.get("dashboard_id");
+      if (options.skipOpen) {
+        return;
+      }
+
+      const dashboardIdFromUrl = options.dashboardId || searchParams.get("dashboard_id");
 
       if (dashboardIdFromUrl) {
         await openDashboard(dashboardIdFromUrl);
@@ -538,13 +546,14 @@ export default function Dashboards() {
         setSelectedDashboard(response.dashboard);
       }
 
+      saveCreatedDashboardHandoff(response);
       setShowCreate(false);
       setTitle("");
       setPrompt("");
       setSelectedDataSourceId("");
       setGenerationStatus("");
       navigate(`/dashboards?dashboard_id=${createdDashboardId}`);
-      loadDashboards();
+      loadDashboards({ skipOpen: true });
     } catch (err) {
       console.error("Erro ao gerar dashboard:", err);
 
@@ -915,7 +924,14 @@ export default function Dashboards() {
   }
 
   useEffect(() => {
-    loadDashboards();
+    const dashboardIdFromUrl = searchParams.get("dashboard_id");
+    const createdDashboard = takeCreatedDashboardHandoff(dashboardIdFromUrl);
+
+    if (createdDashboard) {
+      setSelectedDashboard(createdDashboard);
+    }
+
+    loadDashboards({ dashboardId: dashboardIdFromUrl });
   }, [searchParams]);
 
   useEffect(() => {

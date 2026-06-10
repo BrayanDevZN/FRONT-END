@@ -31,6 +31,7 @@ import {
 
 import { getDataSources } from "../api/dataSourceApi";
 import { getToken, removeToken } from "../utils/storage";
+import { saveCreatedDashboardHandoff } from "../utils/dashboardHandoff";
 import { getNotifications, markNotificationRead } from "../api/collaborationApi";
 
 export default function SidebarWithDataSources() {
@@ -359,6 +360,7 @@ export default function SidebarWithDataSources() {
       setDashboardGenerationStatus("");
       setShowNewDashboardModal(false);
 
+      saveCreatedDashboardHandoff(response);
       goToDashboard(createdDashboardId);
       loadDashboards();
     } catch (err) {
