@@ -154,7 +154,7 @@ async function waitForCreatedDashboard({
   onStatus,
 }) {
   for (let attempt = 1; attempt <= DASHBOARD_CREATION_POLL_ATTEMPTS; attempt += 1) {
-    if (onStatus) {
+    if (onStatus && [1, 6, 12, 24].includes(attempt)) {
       onStatus("Aguardando a API confirmar o dashboard criado...");
     }
 
@@ -195,6 +195,16 @@ export async function generateDashboard({
   onStatus,
 }) {
   const startedAt = new Date();
+  let lastStatusMessage = "";
+
+  function emitStatus(message) {
+    if (!onStatus || !message || message === lastStatusMessage) {
+      return;
+    }
+
+    lastStatusMessage = message;
+    onStatus(message);
+  }
 
   function buildFormData() {
     const formData = new FormData();
@@ -229,7 +239,7 @@ export async function generateDashboard({
         title,
         data_source_id,
         startedAt,
-        onStatus,
+        onStatus: emitStatus,
       });
 
       if (createdDashboard) {
@@ -258,7 +268,7 @@ export async function generateDashboard({
         title,
         data_source_id,
         startedAt,
-        onStatus,
+        onStatus: emitStatus,
       });
 
       if (createdDashboard) {
@@ -283,7 +293,7 @@ export async function generateDashboard({
           title,
           data_source_id,
           startedAt,
-          onStatus,
+          onStatus: emitStatus,
         });
 
         if (createdDashboard) {
@@ -315,7 +325,7 @@ export async function generateDashboard({
           const event = JSON.parse(line);
 
           if (event.type === "status") {
-            onStatus(event.message);
+            emitStatus(event.message);
           }
 
           if (event.type === "error") {
@@ -345,7 +355,7 @@ export async function generateDashboard({
         title,
         data_source_id,
         startedAt,
-        onStatus,
+        onStatus: emitStatus,
       });
 
       if (createdDashboard) {
@@ -369,7 +379,7 @@ export async function generateDashboard({
         title,
         data_source_id,
         startedAt,
-        onStatus,
+        onStatus: emitStatus,
       });
 
       if (createdDashboard) {

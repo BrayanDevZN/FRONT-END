@@ -632,6 +632,44 @@ export default function Dashboards() {
       .replace(/\s+/g, "_");
   }
 
+  function formatDisplayText(value) {
+    return String(value ?? "")
+      .replace(/_/g, " ")
+      .replace(/-/g, " ")
+      .replace(/([a-z])([A-Z])/g, "$1 $2")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function formatColumnLabel(value) {
+    const text = formatDisplayText(value);
+
+    if (!text) return "";
+
+    const special = {
+      id: "ID",
+      cpf: "CPF",
+      cnpj: "CNPJ",
+      cep: "CEP",
+      qtd: "Quantidade",
+      qtde: "Quantidade",
+      rh: "RH",
+      roi: "ROI",
+      ctr: "CTR",
+      cpc: "CPC",
+      cpa: "CPA",
+      sla: "SLA",
+    };
+
+    return text
+      .split(" ")
+      .map((word) => {
+        const normalized = normalizeKey(word);
+        return special[normalized] || `${word.slice(0, 1).toUpperCase()}${word.slice(1).toLowerCase()}`;
+      })
+      .join(" ");
+  }
+
   function findRealKey(data, wantedKey) {
     const firstItem = data?.[0] || {};
     const keys = Object.keys(firstItem);
@@ -927,7 +965,7 @@ export default function Dashboards() {
 
         {payload.map((item, index) => (
           <p key={`${item.name}-${index}`}>
-            {item.name}: {formatTooltipValue(item.value)}
+            {formatColumnLabel(item.name)}: {formatTooltipValue(item.value)}
           </p>
         ))}
       </div>
@@ -1143,7 +1181,7 @@ export default function Dashboards() {
       return (
         <div className="chart-scroll">
           <div style={chartWrapperStyle} className="dashboard-kpi-card">
-            <span>{currentChart.title || activeYKey}</span>
+            <span>{formatDisplayText(currentChart.title || formatColumnLabel(activeYKey))}</span>
             <strong>{formatTooltipValue(value)}</strong>
           </div>
         </div>
@@ -1169,7 +1207,7 @@ export default function Dashboards() {
                   <Line
                     type="monotone"
                     dataKey={activeYKey}
-                    name={activeYKey}
+                    name={formatColumnLabel(activeYKey)}
                     stroke={settings.chartColor}
                     strokeWidth={4}
                     dot={{ r: 5, fill: settings.chartColor, cursor: canGoDeeper ? "pointer" : "default" }}
@@ -1201,7 +1239,7 @@ export default function Dashboards() {
                   <Area
                     type="monotone"
                     dataKey={activeYKey}
-                    name={activeYKey}
+                    name={formatColumnLabel(activeYKey)}
                     stroke={settings.chartColor}
                     fill={settings.chartColor}
                     fillOpacity={0.24}
@@ -1277,7 +1315,7 @@ export default function Dashboards() {
                   <Scatter
                     data={chartData}
                     fill={settings.chartColor}
-                    name={activeYKey}
+                    name={formatColumnLabel(activeYKey)}
                     onClick={(row) => handleDrillClick(row?.payload || row)}
                     cursor={canGoDeeper ? "pointer" : "default"}
                   />
@@ -1331,7 +1369,7 @@ export default function Dashboards() {
 
                   <Bar
                     dataKey={activeYKey}
-                    name={activeYKey}
+                    name={formatColumnLabel(activeYKey)}
                     fill={settings.chartColor}
                     radius={[0, 10, 10, 0]}
                     barSize={Math.min(getBarSize(settings.barStyle), 46)}
@@ -1355,7 +1393,7 @@ export default function Dashboards() {
               <thead>
                 <tr>
                   {Object.keys(chartData[0] || {}).map((key) => (
-                    <th key={key}>{key}</th>
+                    <th key={key}>{formatColumnLabel(key)}</th>
                   ))}
                 </tr>
               </thead>
@@ -1387,7 +1425,7 @@ export default function Dashboards() {
                 <Tooltip content={<CustomTooltip />} />
                 <Bar
                   dataKey={activeYKey}
-                  name={activeYKey}
+                  name={formatColumnLabel(activeYKey)}
                   fill={settings.chartColor}
                   radius={getBarRadius(settings.barStyle)}
                   barSize={getBarSize(settings.barStyle)}
@@ -1415,13 +1453,13 @@ export default function Dashboards() {
     const isCartesian = ["bar", "horizontal_bar", "line", "area", "scatter"].includes(chartType);
 
     if (!canEditDashboard) {
-      return <div className="dashboard-chart-top"><h3>{currentChart.title || `Gráfico ${index + 1}`}</h3></div>;
+      return <div className="dashboard-chart-top"><h3>{formatDisplayText(currentChart.title || `Gráfico ${index + 1}`)}</h3></div>;
     }
 
     return (
       <>
         <div className="dashboard-chart-top">
-          <h3>{currentChart.title || `Gráfico ${index + 1}`}</h3>
+          <h3>{formatDisplayText(currentChart.title || `Gráfico ${index + 1}`)}</h3>
 
           <div className="chart-custom-actions">
             {!isPieLike && (
