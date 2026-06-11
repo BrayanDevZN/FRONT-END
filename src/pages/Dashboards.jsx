@@ -543,7 +543,18 @@ export default function Dashboards() {
       setGenerationStatus("Abrindo dashboard gerado.");
 
       if (response?.dashboard) {
-        setSelectedDashboard(response.dashboard);
+        const createdDashboard = {
+          ...response.dashboard,
+          charts: response.dashboard.charts || response.charts || [],
+        };
+
+        setSelectedDashboard(createdDashboard);
+        setDashboards((prev) => [
+          createdDashboard,
+          ...prev.filter(
+            (dashboard) => Number(dashboard.id) !== Number(createdDashboard.id)
+          ),
+        ]);
       }
 
       saveCreatedDashboardHandoff(response);

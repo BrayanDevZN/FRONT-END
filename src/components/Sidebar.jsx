@@ -33,6 +33,7 @@ import { getDataSources } from "../api/dataSourceApi";
 import { getToken, removeToken } from "../utils/storage";
 import { saveCreatedDashboardHandoff } from "../utils/dashboardHandoff";
 import { getNotifications, markNotificationRead } from "../api/collaborationApi";
+import Loading from "./Loading";
 
 export default function SidebarWithDataSources() {
   const navigate = useNavigate();
@@ -44,6 +45,8 @@ export default function SidebarWithDataSources() {
   const [sharedDashboards, setSharedDashboards] = useState([]);
   const [dashboardSources, setDashboardSources] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingConversations, setLoadingConversations] = useState(false);
+  const [loadingDashboards, setLoadingDashboards] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
 
@@ -128,6 +131,7 @@ export default function SidebarWithDataSources() {
 
   async function loadConversations() {
     try {
+      setLoadingConversations(true);
       const token = getToken();
 
       if (!token) {
@@ -144,11 +148,16 @@ export default function SidebarWithDataSources() {
     } catch (err) {
       console.error("Erro ao carregar conversas:", err);
       setConversations([]);
+    } finally {
+      setLoadingConversations(false);
     }
   }
 
-  async function loadDashboards() {
+  async function loadDashboards(options = {}) {
     try {
+      if (!options.silent) {
+        setLoadingDashboards(true);
+      }
       const token = getToken();
 
       if (!token) {
@@ -163,6 +172,10 @@ export default function SidebarWithDataSources() {
       console.error("Erro ao carregar dashboards:", err);
       setDashboards([]);
       setSharedDashboards([]);
+    } finally {
+      if (!options.silent) {
+        setLoadingDashboards(false);
+      }
     }
   }
 
@@ -354,15 +367,31 @@ export default function SidebarWithDataSources() {
         throw new Error("A API respondeu, mas nao retornou o dashboard criado.");
       }
 
+      const createdDashboard = response?.dashboard
+        ? {
+            ...response.dashboard,
+            charts: response.dashboard.charts || response.charts || [],
+          }
+        : null;
+
+      if (createdDashboard) {
+        setDashboards((prev) => [
+          createdDashboard,
+          ...prev.filter(
+            (dashboard) => Number(dashboard.id) !== Number(createdDashboard.id)
+          ),
+        ]);
+      }
+
+      saveCreatedDashboardHandoff(response);
       setDashboardTitle("");
       setDashboardPrompt("");
       setSelectedDataSourceId("");
       setDashboardGenerationStatus("");
       setShowNewDashboardModal(false);
 
-      saveCreatedDashboardHandoff(response);
       goToDashboard(createdDashboardId);
-      loadDashboards();
+      loadDashboards({ silent: true });
     } catch (err) {
       console.error("Erro ao criar dashboard:", err);
 
@@ -510,7 +539,7 @@ export default function SidebarWithDataSources() {
     loadDashboards();
     loadNotifications();
     const interval = setInterval(() => {
-      loadDashboards();
+      loadDashboards({ silent: true });
       loadNotifications();
     }, 15000);
     return () => clearInterval(interval);
@@ -651,7 +680,15 @@ export default function SidebarWithDataSources() {
             </div>
 
             <div className="sidebar-list">
-              {dashboards.length === 0 ? (
+              {loadingDashboards ? (
+                !collapsed && (
+                  <Loading
+                    compact
+                    label="Carregando dashboards"
+                    description="Atualizando sua lista."
+                  />
+                )
+              ) : dashboards.length === 0 ? (
                 !collapsed && (
                   <p className="sidebar-empty">Nenhum dashboard ainda.</p>
                 )
@@ -718,7 +755,15 @@ export default function SidebarWithDataSources() {
             </div>
 
             <div className="sidebar-list">
-              {sharedDashboards.length === 0 ? (
+              {loadingDashboards ? (
+                !collapsed && (
+                  <Loading
+                    compact
+                    label="Carregando compartilhados"
+                    description="Buscando acessos."
+                  />
+                )
+              ) : sharedDashboards.length === 0 ? (
                 !collapsed && <p className="sidebar-empty">Nenhum compartilhado.</p>
               ) : (
                 sharedDashboards.map((dashboard) => (
@@ -752,7 +797,15 @@ export default function SidebarWithDataSources() {
             </div>
 
             <div className="sidebar-list">
-              {conversations.length === 0 ? (
+              {loadingConversations ? (
+                !collapsed && (
+                  <Loading
+                    compact
+                    label="Carregando chats"
+                    description="Sincronizando conversas."
+                  />
+                )
+              ) : conversations.length === 0 ? (
                 !collapsed && (
                   <p className="sidebar-empty">Nenhuma conversa ainda.</p>
                 )
@@ -903,10 +956,6 @@ export default function SidebarWithDataSources() {
               autoFocus
             />
 
-            {dashboardGenerationStatus && (
-              <p className="dashboard-stream-status">{dashboardGenerationStatus}</p>
-            )}
-
             {modalError && <p className="modal-error">{modalError}</p>}
 
             <div className="modal-actions">
@@ -1016,6 +1065,14 @@ export default function SidebarWithDataSources() {
                 placeholder="Ex: Analise os produtos mais vendidos. Se deixar vazio, a IA fará uma análise geral completa."
               />
             </label>
+
+            {dashboardGenerationStatus && (
+              <Loading
+                compact
+                label={dashboardGenerationStatus}
+                description="Assim que terminar, o dashboard abre automaticamente."
+              />
+            )}
 
             {modalError && <p className="modal-error">{modalError}</p>}
 

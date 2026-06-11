@@ -732,6 +732,33 @@ a:hover {
   gap: 5px;
 }
 
+.sidebar-list .dp-loading {
+  min-height: 42px;
+  padding: 9px 10px;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  box-shadow: none !important;
+  color: rgba(255, 255, 255, 0.78) !important;
+}
+
+.sidebar-list .dp-loading-orbit {
+  width: 22px !important;
+  height: 22px !important;
+  border-color: rgba(255, 255, 255, 0.2);
+  border-top-color: #fff;
+  border-right-color: rgba(255, 255, 255, 0.72);
+}
+
+.sidebar-list .dp-loading-copy strong {
+  color: rgba(255, 255, 255, 0.86) !important;
+  font-size: 12px;
+}
+
+.sidebar-list .dp-loading-copy small {
+  color: rgba(255, 255, 255, 0.52) !important;
+  font-size: 11px;
+}
+
 .sidebar-empty {
   margin: 6px 7px 0;
   color: rgba(255, 255, 255, 0.46);
