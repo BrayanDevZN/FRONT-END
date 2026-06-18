@@ -393,7 +393,7 @@ export default function Relatorios() {
       pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
       pdf.save(`${reportName}`.replace(/\s+/g, "_").toLowerCase() + ".pdf");
       toast.success("PDF exportado com sucesso.");
-    } catch (err) {
+    } catch {
       setError("Erro ao exportar PDF.");
       toast.error("Erro ao exportar PDF.");
     } finally {
