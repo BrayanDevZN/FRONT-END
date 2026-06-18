@@ -18,7 +18,6 @@ import Relatorios from "./pages/Relatorios";
 import Help from "./pages/Help";
 import DataSources from "./pages/DataSources";
 import Collaborations from "./pages/Collaborations";
-import About from "./pages/About";
 
 import PrivateRoute from "./routes/PrivateRoute";
 
@@ -111,15 +110,6 @@ function App() {
           element={
             <PrivateRoute>
               <Relatorios />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="/sobre-nos"
-          element={
-            <PrivateRoute>
-              <About />
             </PrivateRoute>
           }
         />

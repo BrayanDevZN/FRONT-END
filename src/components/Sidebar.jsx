@@ -83,7 +83,6 @@ export default function SidebarWithDataSources() {
     if (location.pathname.startsWith("/chat")) return "ia";
     if (location.pathname.startsWith("/data-sources")) return "data-sources";
     if (location.pathname.startsWith("/collaborations")) return "collaborations";
-    if (location.pathname.startsWith("/sobre-nos")) return "about";
     if (location.pathname.startsWith("/help")) return "help";
     if (location.pathname.startsWith("/settings")) return "settings";
     return "inicio";
@@ -651,17 +650,6 @@ export default function SidebarWithDataSources() {
             >
               <UsersRound size={20} />
               {!collapsed && <span>Colaborações</span>}
-            </button>
-            <button
-              type="button"
-              className={`sidebar-nav-item ${
-                activeArea === "about" ? "is-active" : ""
-              }`}
-              onClick={() => navigate("/sobre-nos")}
-              title="Sobre Nós"
-            >
-              <UsersRound size={20} />
-              {!collapsed && <span>Sobre Nós</span>}
             </button>
           </nav>
 
