@@ -20,8 +20,6 @@ const PAGE_TITLES = {
   settings: "Configurações",
   dataSources: "Fontes de Dados",
   collaborations: "Colaborações",
-  movimentacoes: "Movimentações",
-  relatorios: "Relatórios",
   help: "Ajuda",
 };
 
@@ -79,22 +77,6 @@ function getPageInfo(pathname) {
       key: "help",
       title: PAGE_TITLES.help,
       subtitle: "Encontre ajuda para usar a plataforma.",
-    };
-  }
-
-  if (pathname.startsWith("/movimentacoes")) {
-    return {
-      key: "movimentacoes",
-      title: PAGE_TITLES.movimentacoes,
-      subtitle: "Acompanhe suas movimentações.",
-    };
-  }
-
-  if (pathname.startsWith("/relatorios")) {
-    return {
-      key: "relatorios",
-      title: PAGE_TITLES.relatorios,
-      subtitle: "Consulte seus relatórios.",
     };
   }
 

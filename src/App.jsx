@@ -13,8 +13,6 @@ import Chat from "./pages/Chat";
 import Settings from "./pages/Settings";
 import SettingsRecoverPassword from "./pages/SettingsRecoverPassword";
 import Dashboards from "./pages/Dashboards";
-import Movimentacoes from "./pages/Movimentacoes";
-import Relatorios from "./pages/Relatorios";
 import Help from "./pages/Help";
 import DataSources from "./pages/DataSources";
 import Collaborations from "./pages/Collaborations";
@@ -92,24 +90,6 @@ function App() {
           element={
             <PrivateRoute>
               <Chat />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="/movimentacoes"
-          element={
-            <PrivateRoute>
-              <Movimentacoes />
-            </PrivateRoute>
-          }
-        />
-
-        <Route
-          path="/relatorios"
-          element={
-            <PrivateRoute>
-              <Relatorios />
             </PrivateRoute>
           }
         />
